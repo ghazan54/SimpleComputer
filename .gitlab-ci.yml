@@ -1,0 +1,22 @@
+image: registry.csc.sibsutis.ru/ci/git-clang-format:latest
+
+stages:
+  - build
+  - check-format
+  - test
+
+build:
+  stage: build
+  script:
+    - ./build.sh
+
+check-format:
+  stage: check-format
+  script:
+  - find . -type f -name *.[ch] ! -name '*ctest.h' | xargs clang-format -i --verbose
+  - git diff --exit-code
+
+test:
+  stage: test
+  script:
+    - build/test.out
