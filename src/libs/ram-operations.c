@@ -1,4 +1,4 @@
-#include <ram-operations.h>
+#include <sc/ram-operations.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
