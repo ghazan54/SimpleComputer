@@ -2,8 +2,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-int main(void)
-{
+int main(void) {
     printf("%d\n", mt_setfgcolor(color_black));
     printf("%d\n", mt_setbgcolor(color_white));
     sc_memoryInit();

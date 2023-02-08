@@ -1,4 +1,4 @@
 #pragma once
 
-#include <ram-operations.h>
-#include <terminal.h>
+#include <sc/ram-operations.h>
+#include <sc/terminal.h>
