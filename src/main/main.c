@@ -2,8 +2,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-int main(void)
-{
+int main(void) {
     printf("cls = %d\n", mt_clrscr());
     printf("goto = %d\n", mt_gotoXY(10, 10));
     printf("fg = %d\n", mt_setfgcolor(color_blue));
