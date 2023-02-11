@@ -2,9 +2,14 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-int main(void) {
-    printf("%d\n", mt_setfgcolor(color_black));
-    printf("%d\n", mt_setbgcolor(color_white));
+int main(void)
+{
+    printf("cls = %d\n", mt_clrscr());
+    printf("goto = %d\n", mt_gotoXY(10, 10));
+    printf("fg = %d\n", mt_setfgcolor(color_blue));
+    printf("bg = %d\n", mt_setbgcolor(color_black));
+    int h, w;
+    printf("ws = %d\n", mt_getscreensize(&h, &w));
     sc_memoryInit();
     sc_regInit();
     // // int code, com = 51, oper = 89; // 6617
