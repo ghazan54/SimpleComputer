@@ -23,7 +23,11 @@ int main(void) {
     mt_clrscr();
     // bc_box(5, 5, 14, 14);
     bc_box(5, 5, 24, 14);
-    int n[2] = {0x7E42427E, 0x7E404040};
+    int n[2] = {BC_ONE_1, 0};
+    bc_setbigcharpos(n, 4, 6, 1);
+    bc_setbigcharpos(n, 5, 6, 1);
+    bc_setbigcharpos(n, 6, 6, 1);
+    bc_setbigcharpos(n, 7, 6, 1);
     bc_printbigchar(n, 6, 6, color_white, color_black);
     // bc_box(15, 5, 24, 14);
     int n2[2] = {BC_SIX_1, BC_SIX_2};
