@@ -1,4 +1,4 @@
-#!bin/bash
+#!/bin/bash
 
 # clear_screen=\E[H\E[J,
 # cursor_address=\E[%i%p1%d;%p2%dH,
@@ -8,11 +8,11 @@
 echo -e "\e[H\e[J"
 echo -e "\e[31m"
 echo -e "\e[40m"
-echo -e "\e[5;10H"
+echo -e -n "\e[5;10H"
 echo -e "Kokorin Sergey"
 echo -e "\e[32m"
 echo -e "\e[47m"
-echo -e "\e[6;8H"
+echo -e -n "\e[6;8H"
 echo -e "IV-121"
 echo -e "\e[39m"
 echo -e "\e[49m"
