@@ -2,7 +2,7 @@ APP_NAME = simple_computer.out
 LIB_NAME = libsc.a
 TEST_NAME = test
 
-CFLAGS = -Wall -Wextra 
+CFLAGS = -g -Wall -Wextra 
 CPPFLAGS = -I include/
 TESTFLAGS = -I thirdparty/
 LDFLAGS =
@@ -24,8 +24,9 @@ SRC_TEST = $(SRC_DIR)/$(TEST_NAME)
 
 MODULE_1 = ram-operations
 MODULE_2 = terminal
+MODULE_3 = bigchar
 
-MODULES_LINK = $(OBJ_DIR)/$(MODULE_1).o $(OBJ_DIR)/$(MODULE_2).o
+MODULES_LINK = $(OBJ_DIR)/$(MODULE_1).o $(OBJ_DIR)/$(MODULE_2).o $(OBJ_DIR)/$(MODULE_3).o
 
 .PHONY: all
 all: $(APP_PATH)
@@ -40,6 +41,9 @@ $(OBJ_DIR)/$(MODULE_1).o : $(SRC_LIBS)/$(MODULE_1).c
 	$(CC) -c $(CFLAGS) $(CPPFLAGS) $^ -o $@
 
 $(OBJ_DIR)/$(MODULE_2).o : $(SRC_LIBS)/$(MODULE_2).c
+	$(CC) -c $(CFLAGS) $(CPPFLAGS) $^ -o $@
+
+$(OBJ_DIR)/$(MODULE_3).o : $(SRC_LIBS)/$(MODULE_3).c
 	$(CC) -c $(CFLAGS) $(CPPFLAGS) $^ -o $@
 
 run:
