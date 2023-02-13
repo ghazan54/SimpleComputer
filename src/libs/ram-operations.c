@@ -109,6 +109,12 @@ void sc_memoryOutput(void) {
     printf("\n");
 }
 
+void sc_memoryAddressOutput(int x, int y) {
+    int val = memory[DEFAULT_MAX_STRS * x + y] & 0x3FFF;
+    memory[DEFAULT_MAX_STRS * x + y] & 0x4000 ? printf("-") : printf("+");
+    printf("%04X", val);
+}
+
 int sc_memoryFree(void) {
     if (memory) {
         free(memory);
