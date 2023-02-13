@@ -28,7 +28,7 @@ static int digit(int n) {
 }
 
 int mt_gotoXY(int x, int y) {
-    if (x > 999999 || y > 999999) {
+    if (x < 0 || y < 0) {
         return EXIT_FAILURE;
     }
     int term;
@@ -37,7 +37,7 @@ int mt_gotoXY(int x, int y) {
     }
     const int size_s = TERM_GOTO_MIN_SIZE + digit(x) + digit(y) + 1;
     char s[size_s];
-    sprintf(s, "%s%d;%d%s", TERM_GOTO_X, x, y, TERM_GOTO_Y);
+    sprintf(s, "\e[%d;%df", x, y);
     int c = write(term, s, size_s);
     close(term);
     return !(c == size_s);
@@ -61,7 +61,7 @@ int mt_setfgcolor(enum colors color) {
     }
     const int size_s = TERM_FGCOLOR_MIN_SIZE + 2;  // 2 == color_id + \0
     char s[size_s];
-    sprintf(s, "%s%d%s", TERM_FGCOLOR_FP, color, TERM_FGCOLOR_SP);
+    sprintf(s, "\e[3%dm", color);
     int c = write(term, s, size_s);
     close(term);
     return !(c == size_s);
@@ -74,7 +74,7 @@ int mt_setbgcolor(enum colors color) {
     }
     const int size_s = TERM_BGCOLOR_MIN_SIZE + 2;  // 2 == color_id + \0
     char s[size_s];
-    sprintf(s, "%s%d%s", TERM_BGCOLOR_FP, color, TERM_BGCOLOR_SP);
+    sprintf(s, "\e[4%dm", color);
     int c = write(term, s, size_s);
     close(term);
     return !(c == size_s);
