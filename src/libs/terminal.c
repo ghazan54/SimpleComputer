@@ -1,4 +1,3 @@
-
 #include <errno.h>
 #include <fcntl.h>
 #include <linux/fs.h>
@@ -12,8 +11,7 @@
 #include <sys/types.h>
 #include <unistd.h>
 
-int mt_clrscr(void)
-{
+int mt_clrscr(void) {
     int term;
     if ((term = open(TERMINAL, O_WRONLY)) == -1) {
         return EXIT_FAILURE;
@@ -23,8 +21,7 @@ int mt_clrscr(void)
     return c != -1 ? EXIT_SUCCESS : EXIT_FAILURE;
 }
 
-int mt_getscreensize(int* rows, int* columns)
-{
+int mt_getscreensize(int* rows, int* columns) {
     struct winsize ws;
     if (!rows || !columns || ioctl(STDOUT_FILENO, TIOCGWINSZ, &ws)) {
         return EXIT_FAILURE;
@@ -35,8 +32,7 @@ int mt_getscreensize(int* rows, int* columns)
     }
 }
 
-int mt_gotoXY(int x, int y)
-{
+int mt_gotoXY(int x, int y) {
     int row, col;
     mt_getscreensize(&row, &col);
     if (((x > col) || (x < 0)) || ((y > row) || (y < 0))) {
@@ -53,8 +49,7 @@ int mt_gotoXY(int x, int y)
     return c != -1 ? EXIT_SUCCESS : EXIT_FAILURE;
 }
 
-int mt_setfgcolor(enum colors color)
-{
+int mt_setfgcolor(enum colors color) {
     char s[BUFSIZ];
     sprintf(s, "\e[0;3%dm", color);
     int term;
@@ -66,8 +61,7 @@ int mt_setfgcolor(enum colors color)
     return c != -1 ? EXIT_SUCCESS : EXIT_FAILURE;
 }
 
-int mt_setbgcolor(enum colors color)
-{
+int mt_setbgcolor(enum colors color) {
     char s[BUFSIZ];
     sprintf(s, "\e[4%dm", color);
     int term;
