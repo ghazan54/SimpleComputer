@@ -30,6 +30,10 @@
 #define BC_EIGHT_2 (0x7E424242)
 #define BC_NINE_1 (0x7E42427E)
 #define BC_NINE_2 (0x7E404040)
+#define BC_PLUS_1 (0xFF181818)
+#define BC_PLUS_2 (0x181818FF)
+#define BC_MINUS_1 (0xFF000000)
+#define BC_MINUS_2 (0xFF)
 
 int bc_printA(const char* str);
 int bc_box(int x1, int y1, const int x2, const int y2);
