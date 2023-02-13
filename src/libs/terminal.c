@@ -18,15 +18,6 @@ int mt_clrscr(void) {
     return c == sizeof(TERM_CLEAR_SCREEN) ? EXIT_SUCCESS : EXIT_FAILURE;
 }
 
-static int digit(int n) {
-    int c = 0;
-    while (n > 0) {
-        ++c;
-        n /= 10;
-    }
-    return c;
-}
-
 int mt_gotoXY(int x, int y) {
     if (x < 0 || y < 0) {
         return EXIT_FAILURE;
@@ -35,12 +26,11 @@ int mt_gotoXY(int x, int y) {
     if ((term = open(TERMINAL, O_WRONLY)) == -1) {
         return EXIT_FAILURE;
     }
-    const int size_s = TERM_GOTO_MIN_SIZE + digit(x) + digit(y) + 1;
-    char s[size_s];
+    char s[BUFSIZ] = {0};
     sprintf(s, "\e[%d;%df", x, y);
-    int c = write(term, s, size_s);
+    int c = write(term, s, BUFSIZ);
     close(term);
-    return !(c == size_s);
+    return c != -1 ? EXIT_SUCCESS : EXIT_FAILURE;
 }
 
 int mt_getscreensize(int* rows, int* cols) {
@@ -59,12 +49,11 @@ int mt_setfgcolor(enum colors color) {
     if ((term = open(TERMINAL, O_WRONLY)) == -1) {
         return EXIT_FAILURE;
     }
-    const int size_s = TERM_FGCOLOR_MIN_SIZE + 2;  // 2 == color_id + \0
-    char s[size_s];
+    char s[BUFSIZ] = {0};
     sprintf(s, "\e[3%dm", color);
-    int c = write(term, s, size_s);
+    int c = write(term, s, BUFSIZ);
     close(term);
-    return !(c == size_s);
+    return c != -1 ? EXIT_SUCCESS : EXIT_FAILURE;
 }
 
 int mt_setbgcolor(enum colors color) {
@@ -72,10 +61,9 @@ int mt_setbgcolor(enum colors color) {
     if ((term = open(TERMINAL, O_WRONLY)) == -1) {
         return EXIT_FAILURE;
     }
-    const int size_s = TERM_BGCOLOR_MIN_SIZE + 2;  // 2 == color_id + \0
-    char s[size_s];
+    char s[BUFSIZ] = {0};
     sprintf(s, "\e[4%dm", color);
-    int c = write(term, s, size_s);
+    int c = write(term, s, BUFSIZ);
     close(term);
-    return !(c == size_s);
+    return c != -1 ? EXIT_SUCCESS : EXIT_FAILURE;
 }
