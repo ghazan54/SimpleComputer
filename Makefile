@@ -18,20 +18,33 @@ LIB_PATH = $(LIB_DIR)/$(LIB_NAME)
 MAIN_PATH = $(SRC_DIR)/main
 TEST_PATH = $(BIN_DIR)/$(TEST_NAME).out
 
-LIB_OBJECTS = $(OBJ_DIR)/ram-operations.o
+# LIB_OBJECTS = $(OBJ_DIR)/libsc.o
 SRC_LIBS = $(SRC_DIR)/$(LIB_DIR)
 SRC_TEST = $(SRC_DIR)/$(TEST_NAME)
+
+MODULE_1_LIB = mySimpleComputer
+MODULE_2_LIB = myTerm
+MODULE_1 = ram-operations
+MODULE_2 = terminal
+
+MODULES_LINK = $(OBJ_DIR)/$(MODULE_1).o $(OBJ_DIR)/$(MODULE_2).o
 
 .PHONY: all
 all: $(APP_PATH)
 
-$(APP_PATH): $(MAIN_PATH)/main.c $(LIB_PATH)
+$(APP_PATH): $(MAIN_PATH)/main.c $(LIB_DIR)/$(MODULE_1_LIB).a $(LIB_DIR)/$(MODULE_2_LIB).a
 	$(CC) $(CFLAGS) $(CPPFLAGS) $^ -o $@ $(LDFLAGS) $(LDLIBS)
 
-$(LIB_PATH): $(LIB_OBJECTS)
+$(LIB_DIR)/$(MODULE_1_LIB).a: $(OBJ_DIR)/$(MODULE_1).o
 	ar rcs $@ $^
 
-$(LIB_OBJECTS) : $(SRC_LIBS)/ram-operations.c
+$(LIB_DIR)/$(MODULE_2_LIB).a: $(OBJ_DIR)/$(MODULE_2).o
+	ar rcs $@ $^
+
+$(OBJ_DIR)/$(MODULE_1).o : $(SRC_LIBS)/$(MODULE_1).c
+	$(CC) -c $(CFLAGS) $(CPPFLAGS) $^ -o $@
+
+$(OBJ_DIR)/$(MODULE_2).o : $(SRC_LIBS)/$(MODULE_2).c
 	$(CC) -c $(CFLAGS) $(CPPFLAGS) $^ -o $@
 
 run:
@@ -50,7 +63,7 @@ rebuild: clean all
 
 test: $(TEST_PATH)
 
-$(TEST_PATH) : $(SRC_TEST)/main.c $(SRC_TEST)/$(TEST_NAME).c $(LIB_PATH)
+$(TEST_PATH) : $(SRC_TEST)/main.c $(SRC_TEST)/$(TEST_NAME).c $(LIB_DIR)/$(MODULE_1_LIB).a $(LIB_DIR)/$(MODULE_2_LIB).a
 	$(CC) $(CFLAGS) $(CPPFLAGS) $(TESTFLAGS) $^ -o $@ $(LDFLAGS) $(LDLIBS)
 
 test_run:
