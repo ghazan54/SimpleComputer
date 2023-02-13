@@ -45,7 +45,7 @@ int mt_gotoXY(int x, int y) {
 
 int mt_getscreensize(int* rows, int* cols) {
     struct winsize ws;
-    if (ioctl(1, TIOCGWINSZ, &ws)) {
+    if (!rows || !cols || ioctl(1, TIOCGWINSZ, &ws)) {
         return EXIT_FAILURE;
     } else {
         *rows = ws.ws_row;
