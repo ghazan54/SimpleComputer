@@ -19,3 +19,8 @@ int I_printhex(int x, int y, enum colors fg, enum colors bg);
 int I_printinfo(const char I, enum colors fg, enum colors bg);
 int I_printbig(int x, int y);
 int I_printkeys(void);
+int I_printaccumulator(void);
+int I_printinstructionCounter(void);
+int I_printoperations(void);
+int I_printflags(void);
+int I_startsc(void);

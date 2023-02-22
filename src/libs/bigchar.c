@@ -10,8 +10,6 @@ int bc_printA(const char* str) { return str && printf("\e(0%s\e(B", str) ? EXIT_
 
 int bc_box(int x1, int y1, const int x2, const int y2) {
     if (x1 > x2 || y1 > y2 || x1 < 0 || x2 < 0 || y1 < 0 || y2 < 0) return EXIT_FAILURE;
-    // if (mt_clrscr())
-    //     return EXIT_FAILURE;
     bool first = true;
     for (; x1 <= x2; ++x1, first = false) {
         if (mt_gotoXY(x1, y1)) return EXIT_FAILURE;
@@ -47,8 +45,6 @@ int bc_box(int x1, int y1, const int x2, const int y2) {
 }
 
 int bc_printbigchar(int n[2], int x, int y, enum colors fg, enum colors bg) {
-    // mt_clrscr();
-
     if (mt_setfgcolor(fg)) return EXIT_FAILURE;
 
     if (mt_setbgcolor(bg)) return EXIT_FAILURE;
