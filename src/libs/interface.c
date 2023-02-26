@@ -18,8 +18,6 @@ static int operations = 0;
 static int cur_x = 0;
 static int cur_y = 0;
 
-static bool sc_continue = true;
-
 int I_simplecomputer(void) {
     setvbuf(stdout, NULL, _IONBF, 0);
     if (mt_clrscr() || sc_memoryInit() || sc_regInit()) return EXIT_FAILURE;
@@ -27,15 +25,15 @@ int I_simplecomputer(void) {
     if (bc_box(1, 1, 12, 62) || bc_box(1, 63, 3, 84) || bc_box(4, 63, 6, 84) || bc_box(7, 63, 9, 84) ||
         bc_box(10, 63, 12, 84) || bc_box(13, 1, 22, 46) || bc_box(13, 47, 22, 84))
         return EXIT_FAILURE;
-    sc_memorySet(7, 0x2 | 0x4000);
     sc_regSet(err_division_by_zero, 1);
     sc_regSet(err_ignoring_clock_pulses, 1);
     sc_regSet(err_invalid_command, 1);
     sc_regSet(err_out_of_range, 1);
     sc_regSet(err_overflow, 1);
+    for (int i = 0; i < DEFAULT_MEMORY_INIT; ++i) {
+        sc_memorySet(i, i + 2);
+    }
     I_printall();
-    // I_printhex(0, 7, color_blue, color_red);
-    // mt_clrscr();
     I_startsc();
     return EXIT_SUCCESS;
 }
@@ -66,12 +64,12 @@ int move_address_xy(const int d) {
                 cur_y = DEFAULT_MAX_STRS - 1;
             else
                 cur_y -= 1;
-
             break;
 
         default:
             break;
     }
+    return EXIT_SUCCESS;
 }
 
 int I_startsc(void) {
@@ -162,6 +160,7 @@ int I_startsc(void) {
                 }
                 break;
         }
+        I_printbig(cur_x, cur_y);
     }
     return EXIT_SUCCESS;
 }
@@ -224,56 +223,72 @@ int I_printinfo(const char I, enum colors fg, enum colors bg) {
     return c;
 }
 
+int createbigchar(int n[2], char* bc) {
+    int c = 0;
+    for (int x = 0; x < 8; ++x) {
+        for (int y = 0; y < 8; ++y) {
+            if (bc_setbigcharpos(n, x, y, bc[c++])) return EXIT_FAILURE;
+        }
+    }
+    return EXIT_SUCCESS;
+}
+
 int _I_printbig(const char d, int x, int y) {
     int n[2];
     switch (d) {
         case '0':
-            n[0] = BC_NIL_1;
-            n[1] = BC_NIL_2;
+            createbigchar(n, big_char_0);
             return bc_printbigchar(n, x, y, color_default, color_default);
         case '1':
-            n[0] = BC_ONE_1;
-            n[1] = BC_ONE_2;
+            createbigchar(n, big_char_1);
             return bc_printbigchar(n, x, y, color_default, color_default);
         case '2':
-            n[0] = BC_TWO_1;
-            n[1] = BC_TWO_2;
+            createbigchar(n, big_char_2);
             return bc_printbigchar(n, x, y, color_default, color_default);
         case '3':
-            n[0] = BC_THREE_1;
-            n[1] = BC_THREE_2;
+            createbigchar(n, big_char_3);
             return bc_printbigchar(n, x, y, color_default, color_default);
         case '4':
-            n[0] = BC_FOUR_1;
-            n[1] = BC_FOUR_2;
+            createbigchar(n, big_char_4);
             return bc_printbigchar(n, x, y, color_default, color_default);
         case '5':
-            n[0] = BC_FIVE_1;
-            n[1] = BC_FIVE_2;
+            createbigchar(n, big_char_5);
             return bc_printbigchar(n, x, y, color_default, color_default);
         case '6':
-            n[0] = BC_SIX_1;
-            n[1] = BC_SIX_2;
+            createbigchar(n, big_char_6);
             return bc_printbigchar(n, x, y, color_default, color_default);
         case '7':
-            n[0] = BC_SEVEN_1;
-            n[1] = BC_SEVEN_2;
+            createbigchar(n, big_char_7);
             return bc_printbigchar(n, x, y, color_default, color_default);
         case '8':
-            n[0] = BC_EIGHT_1;
-            n[1] = BC_EIGHT_2;
+            createbigchar(n, big_char_8);
             return bc_printbigchar(n, x, y, color_default, color_default);
         case '9':
-            n[0] = BC_NINE_1;
-            n[1] = BC_NINE_2;
+            createbigchar(n, big_char_9);
             return bc_printbigchar(n, x, y, color_default, color_default);
         case '+':
-            n[0] = BC_PLUS_1;
-            n[1] = BC_PLUS_2;
+            createbigchar(n, big_char_plus);
             return bc_printbigchar(n, x, y, color_default, color_default);
         case '-':
-            n[0] = BC_MINUS_1;
-            n[1] = BC_MINUS_2;
+            createbigchar(n, big_char_minus);
+            return bc_printbigchar(n, x, y, color_default, color_default);
+        case 'A':
+            createbigchar(n, big_char_A);
+            return bc_printbigchar(n, x, y, color_default, color_default);
+        case 'B':
+            createbigchar(n, big_char_B);
+            return bc_printbigchar(n, x, y, color_default, color_default);
+        case 'C':
+            createbigchar(n, big_char_C);
+            return bc_printbigchar(n, x, y, color_default, color_default);
+        case 'D':
+            createbigchar(n, big_char_D);
+            return bc_printbigchar(n, x, y, color_default, color_default);
+        case 'E':
+            createbigchar(n, big_char_E);
+            return bc_printbigchar(n, x, y, color_default, color_default);
+        case 'F':
+            createbigchar(n, big_char_F);
             return bc_printbigchar(n, x, y, color_default, color_default);
         default:
             return EXIT_FAILURE;
@@ -284,8 +299,8 @@ int I_printbig(int x, int y) {
     int c;
     if (sc_memoryGet(DEFAULT_MAX_STRS * x + y, &c)) return EXIT_FAILURE;
     char digit[5];
-    sprintf(digit, "%04X", c & 0x3FFF);
-    char sign = c & 0x4000 ? '-' : '+';
+    sprintf(digit, "%04X", c);
+    char sign = c < 0 ? '-' : '+';
     if (_I_printbig(sign, 14, 2) || _I_printbig(digit[0], 14, 11) || _I_printbig(digit[1], 14, 20) ||
         _I_printbig(digit[2], 14, 29) || _I_printbig(digit[3], 14, 38))
         EXIT_FAILURE;
@@ -314,8 +329,8 @@ int I_printaccumulator() {
     if (mt_gotoXY(1, 67)) return EXIT_FAILURE;
     printf(" accumulator ");
     if (mt_gotoXY(I_POS_ACCUMULATOR_X, I_POS_ACCUMULATOR_Y)) return EXIT_FAILURE;
-    accumulator & 0x4000 ? printf("-") : printf("+");
-    printf("%04X", accumulator & 0x3FFF);
+    accumulator < 0 ? printf("-") : printf("+");
+    printf("%04X", accumulator);
     return EXIT_SUCCESS;
 }
 
@@ -323,8 +338,8 @@ int I_printinstructionCounter() {
     if (mt_gotoXY(4, 64)) return EXIT_FAILURE;
     printf(" instructionCounter ");
     if (mt_gotoXY(I_POS_IC_X, I_POS_IC_Y)) return EXIT_FAILURE;
-    printf("+");
-    printf("%04X", DEFAULT_MAX_STRS * cur_x + cur_y);
+    instructionCounter = DEFAULT_MAX_STRS * cur_x + cur_y;
+    printf("+%04X", instructionCounter);
     return EXIT_SUCCESS;
 }
 
@@ -332,8 +347,7 @@ int I_printoperations() {
     if (mt_gotoXY(7, 68)) return EXIT_FAILURE;
     printf(" Operation ");
     if (mt_gotoXY(I_POS_OPERATION_X, I_POS_OPERATION_Y)) return EXIT_FAILURE;
-    operations & 0x4000 ? printf("-") : printf("+");
-    printf("%04X", operations & 0x3FFF);
+    printf("+%04X", operations);
     return EXIT_SUCCESS;
 }
 
