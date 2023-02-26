@@ -18,6 +18,8 @@ static int operations = 0;
 static int cur_x = 0;
 static int cur_y = 0;
 
+static struct termios cur_term, old_term;
+
 int I_simplecomputer(void) {
     setvbuf(stdout, NULL, _IONBF, 0);
     if (mt_clrscr() || sc_memoryInit() || sc_regInit()) return EXIT_FAILURE;
@@ -72,8 +74,18 @@ int move_address_xy(const int d) {
     return EXIT_SUCCESS;
 }
 
+void I_stopsc(int sig) {
+    tcsetattr(STDIN_FILENO, TCSAFLUSH, &old_term);
+    sig = sc_memoryFree();
+    exit(sig ? EXIT_FAILURE : EXIT_SUCCESS);
+}
+
 int I_startsc(void) {
     int cmd = -1;
+    tcgetattr(STDIN_FILENO, &old_term);
+    cur_term = old_term;
+    cur_term.c_lflag &= ~(ICANON | ECHO);
+    tcsetattr(STDIN_FILENO, TCSANOW, &cur_term);
     while (1) {
         if (I_printhex(cur_x, cur_y, color_red, color_default)) return EXIT_FAILURE;
         if (I_printinstructionCounter()) return EXIT_FAILURE;
@@ -160,6 +172,7 @@ int I_startsc(void) {
                 }
                 break;
         }
+        signal(SIGINT, I_stopsc);
         I_printbig(cur_x, cur_y);
     }
     return EXIT_SUCCESS;
