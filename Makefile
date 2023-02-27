@@ -34,7 +34,18 @@ MODULE_3 = bigchar
 MODULES_LINK = $(LIB_DIR)/$(MODULE_0_LIB).a $(LIB_DIR)/$(MODULE_1_LIB).a $(LIB_DIR)/$(MODULE_2_LIB).a $(LIB_DIR)/$(MODULE_3_LIB).a
 
 .PHONY: all
-all: $(APP_PATH)
+
+all: create_bin create_obj create_libs $(APP_PATH)
+
+create_bin:
+	mkdir $(BIN_DIR)
+
+create_obj:
+	mkdir $(OBJ_DIR)
+
+create_libs:
+	mkdir $(LIB_DIR)
+
 
 $(APP_PATH): $(MAIN_PATH)/main.c $(MODULES_LINK)
 	$(CC) $(CFLAGS) $(CPPFLAGS) $^ -o $@ $(LDFLAGS) $(LDLIBS)
@@ -68,12 +79,9 @@ run:
 
 .PHONY: clean
 clean:
-	find . -name '*.o' -exec $(RM) '{}' \;
-	find . -name '*.a' -exec $(RM) '{}' \;
-	find . -name '*.so' -exec $(RM) '{}' \;
-	find . -name '*.d' -exec $(RM) '{}' \;
-	$(RM) $(APP_PATH)
-	$(RM) $(TEST_PATH)
+	$(RM) -r $(BIN_DIR)
+	$(RM) -r $(OBJ_DIR)
+	$(RM) -r $(LIB_DIR)
 
 rebuild: clean all
 

@@ -9,7 +9,7 @@
 #define I_POS_IC_X 5
 #define I_POS_IC_Y 71
 #define I_POS_OPERATION_X 8
-#define I_POS_OPERATION_Y 71
+#define I_POS_OPERATION_Y 70
 #define I_POS_FLAGS_X 11
 #define I_POS_FLAGS_Y 69
 
