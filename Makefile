@@ -35,17 +35,18 @@ MODULES_LINK = $(LIB_DIR)/$(MODULE_0_LIB).a $(LIB_DIR)/$(MODULE_1_LIB).a $(LIB_D
 
 .PHONY: all
 
-all: create_bin create_obj create_libs $(APP_PATH)
+all: create_dirs $(APP_PATH)
+
+create_dirs: create_bin create_obj create_libs
 
 create_bin:
-	mkdir $(BIN_DIR)
+	if [ ! -d $(BIN_DIR) ]; then mkdir $(BIN_DIR); fi
 
 create_obj:
-	mkdir $(OBJ_DIR)
+	if [ ! -d $(OBJ_DIR) ]; then mkdir $(OBJ_DIR); fi
 
 create_libs:
-	mkdir $(LIB_DIR)
-
+	if [ ! -d $(LIB_DIR) ]; then mkdir $(LIB_DIR); fi
 
 $(APP_PATH): $(MAIN_PATH)/main.c $(MODULES_LINK)
 	$(CC) $(CFLAGS) $(CPPFLAGS) $^ -o $@ $(LDFLAGS) $(LDLIBS)
@@ -85,10 +86,19 @@ clean:
 
 rebuild: clean all
 
-test: $(TEST_PATH)
+test: create_dirs $(BIN_DIR)/test_$(MODULE_1).out $(BIN_DIR)/test_$(MODULE_2).out
 
-$(TEST_PATH) : $(SRC_TEST)/main.c $(SRC_TEST)/$(TEST_NAME).c $(LIB_DIR)/$(MODULE_1_LIB).a $(LIB_DIR)/$(MODULE_2_LIB).a
+# $(TEST_PATH) : $(SRC_TEST)/main.c $(SRC_TEST)/$(TEST_NAME).c $(LIB_DIR)/$(MODULE_1_LIB).a $(LIB_DIR)/$(MODULE_2_LIB).a
+# 	$(CC) $(CFLAGS) $(CPPFLAGS) $(TESTFLAGS) $^ -o $@ $(LDFLAGS) $(LDLIBS)
+
+$(BIN_DIR)/test_$(MODULE_1).out: $(SRC_TEST)/main_test_$(MODULE_1).c $(SRC_TEST)/test_$(MODULE_1).c $(LIB_DIR)/$(MODULE_1_LIB).a
 	$(CC) $(CFLAGS) $(CPPFLAGS) $(TESTFLAGS) $^ -o $@ $(LDFLAGS) $(LDLIBS)
 
-test_run:
-	$(TEST_PATH)
+$(BIN_DIR)/test_$(MODULE_2).out: $(SRC_TEST)/main_test_$(MODULE_2).c $(SRC_TEST)/test_$(MODULE_2).c $(LIB_DIR)/$(MODULE_2_LIB).a
+	$(CC) $(CFLAGS) $(CPPFLAGS) $(TESTFLAGS) $^ -o $@ $(LDFLAGS) $(LDLIBS)
+
+$(BIN_DIR)/test_$(MODULE_3).out: $(SRC_TEST)/main_test_$(MODULE_3).c $(SRC_TEST)/test_$(MODULE_3).c $(LIB_DIR)/$(MODULE_3_LIB).a
+	$(CC) $(CFLAGS) $(CPPFLAGS) $(TESTFLAGS) $^ -o $@ $(LDFLAGS) $(LDLIBS)
+
+# test_run:
+# 	$(TEST_PATH)
