@@ -1,6 +1,7 @@
 #pragma once
 
 #include <sc/bigchar.h>
+#include <sc/keys.h>
 #include <sc/ram-operations.h>
 #include <sc/terminal.h>
 
@@ -24,3 +25,6 @@ int I_printinstructionCounter(void);
 int I_printoperations(void);
 int I_printflags(void);
 int I_startsc(void);
+int I_printcustomfields(void);
+int I_printOutField(void);
+int I_printErrField(void);

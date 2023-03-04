@@ -5,7 +5,6 @@
 #include <stdio.h>
 #include <stdio_ext.h>
 #include <stdlib.h>
-#include <termios.h>
 #include <unistd.h>
 
 static int base_x = 2;
@@ -19,14 +18,13 @@ static int cur_command = 0;
 static int cur_x = 0;
 static int cur_y = 0;
 
-static struct termios cur_term, old_term;
-
 int I_simplecomputer(void) {
     setvbuf(stdout, NULL, _IONBF, 0);
     if (mt_clrscr() || sc_memoryInit() || sc_regInit()) return EXIT_FAILURE;
     if (mt_gotoXY(1, 1)) return EXIT_FAILURE;
     if (bc_box(1, 1, 12, 62) || bc_box(1, 63, 3, 84) || bc_box(4, 63, 6, 84) || bc_box(7, 63, 9, 84) ||
-        bc_box(10, 63, 12, 84) || bc_box(13, 1, 22, 46) || bc_box(13, 47, 22, 84))
+        bc_box(10, 63, 12, 84) || bc_box(13, 1, 22, 46) || bc_box(13, 47, 22, 84) || bc_box(23, 1, 25, 46) ||
+        bc_box(23, 47, 25, 84))
         return EXIT_FAILURE;
     sc_regSet(err_division_by_zero, 1);
     sc_regSet(err_ignoring_clock_pulses, 1);
@@ -76,105 +74,20 @@ int move_address_xy(const int d) {
 }
 
 void I_stopsc(int sig) {
-    tcsetattr(STDIN_FILENO, TCSAFLUSH, &old_term);
+    // tcsetattr(STDIN_FILENO, TCSAFLUSH, &old_term);
     sig = sc_memoryFree();
-    exit(sig ? EXIT_FAILURE : EXIT_SUCCESS);
+    exit(EXIT_SUCCESS);
 }
 
 int I_startsc(void) {
-    int cmd = -1;
-    tcgetattr(STDIN_FILENO, &old_term);
-    cur_term = old_term;
-    cur_term.c_lflag &= ~(ICANON | ECHO);
-    tcsetattr(STDIN_FILENO, TCSANOW, &cur_term);
     while (1) {
+        signal(SIGINT, I_stopsc);
         if (I_printhex(cur_x, cur_y, color_red, color_default)) return EXIT_FAILURE;
         if (I_printinstructionCounter()) return EXIT_FAILURE;
         if (I_printoperations()) return EXIT_FAILURE;
-        if (mt_gotoXY(23, 0)) return EXIT_FAILURE;
-        char c = 0;
-        if (read(1, &c, 1) != 1) exit(EXIT_FAILURE);
-        switch (c) {
-            case '\033':
-                cmd = 1;
-                break;
-            case 'l':
-                cmd = 0;
-                printf("Press L\n");
-                break;
-            case '[':
-                if (cmd == 1) {
-                    cmd = 2;
-                } else {
-                    printf("Unknown key!!\n");
-                }
-                break;
-            case '1':
-                if (cmd == 2) {
-                    cmd = 3;
-                } else {
-                    printf("Unknown key!!\n");
-                }
-                break;
-            case '5':
-                if (cmd == 3) {
-                    cmd = 4;
-                } else {
-                    printf("Unknown key!!\n");
-                }
-                break;
-            case '7':
-                if (cmd == 3) {
-                    cmd = 5;
-                } else {
-                    printf("Unknown key!!\n");
-                }
-                break;
-            case '~':
-                if (cmd == 4) {
-                    printf("Pressed F5!\n");
-                    cmd = 0;
-                } else if (cmd == 5) {
-                    printf("Pressed F6!\n");
-                    cmd = 0;
-                } else {
-                    printf("Unknown key!!\n");
-                }
-                break;
-            case 'A':
-                if (cmd == 2) {
-                    move_address_xy(0);
-                    cmd = 0;
-                } else {
-                    printf("Unknown key!!\n");
-                }
-                break;
-            case 'B':
-                if (cmd == 2) {
-                    move_address_xy(1);
-                    cmd = 0;
-                } else {
-                    printf("Unknown key!!\n");
-                }
-                break;
-            case 'C':
-                if (cmd == 2) {
-                    move_address_xy(2);
-                    cmd = 0;
-                } else {
-                    printf("Unknown key!!\n");
-                }
-                break;
-            case 'D':
-                if (cmd == 2) {
-                    move_address_xy(3);
-                    cmd = 0;
-                } else {
-                    printf("Unknown key!!\n");
-                }
-                break;
-        }
-        signal(SIGINT, I_stopsc);
+        if (mt_gotoXY(26, 0)) return EXIT_FAILURE;
+        int key;
+        rk_readkey((enum keys*)(&key));
         I_printbig(cur_x, cur_y);
     }
     return EXIT_SUCCESS;
@@ -185,7 +98,7 @@ int I_printall(void) {
     if (I_printinfo('i', color_default, color_default)) return EXIT_FAILURE;
     if (I_printinfo('o', color_default, color_default)) return EXIT_FAILURE;
     if (I_printinfo('f', color_default, color_default)) return EXIT_FAILURE;
-
+    if (I_printcustomfields()) return EXIT_FAILURE;
     if (mt_gotoXY(1, 29)) return EXIT_FAILURE;
     printf(" Memory ");
     for (int i = 0; i < DEFAULT_MAX_STRS; ++i) {
@@ -385,3 +298,16 @@ int I_printflags() {
     c ? printf("C ") : printf(" ");
     return r;
 }
+
+int I_printcustomfields() {
+    // bc_box(23, 1, 25, 46) || bc_box(23, 47, 25, 84)
+    if (mt_gotoXY(23, 3)) return EXIT_FAILURE;
+    printf(" Input ");
+    if (mt_gotoXY(23, 49)) return EXIT_FAILURE;
+    printf(" Output ");
+    return EXIT_SUCCESS;
+}
+
+int I_printOutField() {}
+
+int I_printErrField() {}
