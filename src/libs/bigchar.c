@@ -175,11 +175,12 @@ int bc_getbigcharpos(int* big, int x, int y, int* value) {
 }
 
 int bc_bigcharwrite(int fd, int* big, int count) {
-    return !big || write(fd, big, count * sizeof(int)) == -1 ? EXIT_FAILURE : EXIT_SUCCESS;
+    return !big || write(fd, big, count * sizeof(int) * 2) == -1 ? EXIT_FAILURE : EXIT_SUCCESS;
 }
 
 int bc_bigcharread(int fd, int* big, int need_count, int* count) {
-    if (!big) return EXIT_FAILURE;
-    *count = read(fd, big, need_count * sizeof(int));
+    if (!big || !count) return EXIT_FAILURE;
+    *count = read(fd, big, need_count * sizeof(int) * 2);
+    if (*count != -1) *count = *count / sizeof(int) / 2;
     return !big || *count != need_count ? EXIT_FAILURE : EXIT_SUCCESS;
 }
