@@ -10,6 +10,8 @@
 #define MASK_OPERAND_BITS (0x7f)
 #define MASK_COMMAND_BITS (MASK_OPERAND_BITS << DEFAULT_BLOCK_ENCODE_BITS)
 
+#define SAVE_PATH "data/myMemory.data"
+
 enum error_bits_memory {
     err_overflow = 1,
     err_division_by_zero,

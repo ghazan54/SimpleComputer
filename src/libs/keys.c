@@ -10,8 +10,8 @@
 static struct termios term_settings;
 
 int rk_readkey(enum keys* key) {
-    char bf[5] = {0};
-    if (read(STDIN_FILENO, bf, 4) == -1) return EXIT_FAILURE;
+    char bf[6] = {0};
+    if (read(STDIN_FILENO, bf, 5) == -1) return EXIT_FAILURE;
     if (!strcmp("l", bf)) {
         *key = key_L;
     } else if (!strcmp("s", bf)) {
@@ -43,12 +43,12 @@ int rk_readkey(enum keys* key) {
 }
 
 int rk_keyaction(const enum keys key) {
-    int res = 0;
     switch (key) {
         case key_L:
-            break;
+            return sc_memoryLoad(SAVE_PATH) || I_printall();
         case key_S:
-            break;
+            mkdir("data", S_IRWXU | S_IRWXG | S_IRWXO);
+            return sc_memorySave(SAVE_PATH);
         case key_R:
             break;
         case key_T:
@@ -56,29 +56,24 @@ int rk_keyaction(const enum keys key) {
         case key_I:
             break;
         case key_F5:
-            break;
+            return I_setAccumulator();
         case key_F6:
-            break;
+            return I_setInstructionCounter();
         case key_UP:
-            I_move_address_xy(0);
-            break;
+            return I_move_address_xy(0);
         case key_DOWN:
-            I_move_address_xy(1);
-            break;
+            return I_move_address_xy(1);
         case key_RIGHT:
-            I_move_address_xy(2);
-            break;
+            return I_move_address_xy(2);
         case key_LEFT:
-            I_move_address_xy(3);
-            break;
+            return I_move_address_xy(3);
         case key_ENTER:
-            I_executeOperation();
-            break;
+            return I_executeOperation();
         default:
-            I_printOutputField("Unknow key");
-            return EXIT_FAILURE;
+            // I_printOutputField("Unknow key");
+            break;
     }
-    return res;
+    return EXIT_FAILURE;
 }
 
 int rk_mytermsave(void) {

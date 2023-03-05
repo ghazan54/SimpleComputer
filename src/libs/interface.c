@@ -1,10 +1,14 @@
+#include <ctype.h>
 #include <fcntl.h>
+#include <math.h>
 #include <sc/CU.h>
 #include <sc/interface.h>
 #include <signal.h>
+#include <stdint.h>
 #include <stdio.h>
 #include <stdio_ext.h>
 #include <stdlib.h>
+#include <string.h>
 #include <unistd.h>
 
 static int base_x = 2;
@@ -34,6 +38,29 @@ int I_simplecomputer(void) {
     // }
     I_printall();
     I_startsc();
+    return EXIT_SUCCESS;
+}
+
+void I_stopsc(int sig) {
+    sig = sc_memoryFree();
+    mt_gotoXY(26, 0);
+    exit(EXIT_SUCCESS);
+}
+
+int I_startsc(void) {
+    rk_mytermregime(0, 0, 1, 0, 1);
+    while (1) {
+        signal(SIGINT, I_stopsc);
+        if (I_printhex(cur_x, cur_y, color_red, color_default)) return EXIT_FAILURE;
+        if (I_printinstructionCounter()) return EXIT_FAILURE;
+        if (I_printoperations()) return EXIT_FAILURE;
+        if (mt_gotoXY(24, 5)) return EXIT_FAILURE;
+        enum keys key = 99;
+        rk_readkey(&key);
+        rk_keyaction(key);
+        I_printbig(cur_x, cur_y);
+        I_printflags();
+    }
     return EXIT_SUCCESS;
 }
 
@@ -67,29 +94,6 @@ int I_move_address_xy(const int d) {
 
         default:
             break;
-    }
-    return EXIT_SUCCESS;
-}
-
-void I_stopsc(int sig) {
-    sig = sc_memoryFree();
-    mt_gotoXY(26, 0);
-    exit(EXIT_SUCCESS);
-}
-
-int I_startsc(void) {
-    rk_mytermregime(0, 0, 1, 0, 1);
-    while (1) {
-        signal(SIGINT, I_stopsc);
-        if (I_printhex(cur_x, cur_y, color_red, color_default)) return EXIT_FAILURE;
-        if (I_printinstructionCounter()) return EXIT_FAILURE;
-        if (I_printoperations()) return EXIT_FAILURE;
-        if (mt_gotoXY(24, 5)) return EXIT_FAILURE;
-        enum keys key = 99;
-        rk_readkey(&key);
-        rk_keyaction(key);
-        I_printbig(cur_x, cur_y);
-        I_printflags();
     }
     return EXIT_SUCCESS;
 }
@@ -341,7 +345,7 @@ int I_executeOperation() {
     if (rk_mytermregime(0, 0, 2, 1, 0)) return EXIT_FAILURE;
     char bf[3] = {0};
     int ret = 0;
-    I_printInputField(1, NULL);
+    I_printInputField(1, "Command: ");
     if (read(STDIN_FILENO, bf, 2) == -1) return EXIT_FAILURE;
     cur_command = atoi(bf);
     if (sc_commandEncode(cur_command, instructionCounter, &operations)) {
@@ -353,4 +357,108 @@ int I_executeOperation() {
     I_printInputField(0, NULL);
     if (rk_mytermrestore()) return EXIT_FAILURE;
     return ret;
+}
+
+int I_setAccumulator() {
+    if (rk_mytermsave()) return EXIT_FAILURE;
+    if (rk_mytermregime(0, 0, 4, 1, 0)) return EXIT_FAILURE;
+    char bf[5] = {0};
+    I_printInputField(1, "Accumulator: ");
+    if (read(STDIN_FILENO, bf, 4) == -1) return EXIT_FAILURE;
+    if (rk_mytermrestore()) return EXIT_FAILURE;
+    I_printInputField(0, NULL);
+    long long c = xtoll(bf);
+    if (c > INT32_MAX || c < INT32_MIN) {
+        sc_regSet(err_out_of_range, 1);
+        return EXIT_SUCCESS;
+    }
+    if (!c && bf[0] != '0') {
+        return EXIT_FAILURE;
+    }
+    accumulator = (int)c;
+    I_printaccumulator();
+    return EXIT_FAILURE;
+}
+
+int I_setInstructionCounter(void) {
+    if (rk_mytermsave()) return EXIT_FAILURE;
+    if (rk_mytermregime(0, 0, 4, 1, 0)) return EXIT_FAILURE;
+    char bf[5] = {0};
+    I_printInputField(1, "InstructionCounter: ");
+    if (read(STDIN_FILENO, bf, 4) == -1) return EXIT_FAILURE;
+    if (rk_mytermrestore()) return EXIT_FAILURE;
+    I_printInputField(0, NULL);
+    long long c = xtoll(bf);
+    if (c > 0x63 || c < 0) {
+        sc_regSet(err_out_of_range, 1);
+        return EXIT_SUCCESS;
+    }
+    if (!c && bf[0] != '0') {
+        return EXIT_FAILURE;
+    }
+    I_move_address_xy(5);
+    instructionCounter = (int)c;
+    cur_x = instructionCounter / 10;
+    cur_y = instructionCounter % 10;
+    I_printinstructionCounter();
+    return EXIT_FAILURE;
+}
+
+long long xtoll(char* s) {
+    int i, sum = 0, k;
+    int p = (int)strlen(s) - 1;
+    for (i = 0; s[i] != '\0'; i++) {
+        switch (toupper(s[i])) {
+            case 'A':
+                k = 10;
+                break;
+            case 'B':
+                k = 11;
+                break;
+            case 'C':
+                k = 12;
+                break;
+            case 'D':
+                k = 13;
+                break;
+            case 'E':
+                k = 14;
+                break;
+            case 'F':
+                k = 15;
+                break;
+            case '1':
+                k = 1;
+                break;
+            case '2':
+                k = 2;
+                break;
+            case '3':
+                k = 3;
+                break;
+            case '4':
+                k = 4;
+                break;
+            case '5':
+                k = 5;
+                break;
+            case '6':
+                k = 6;
+                break;
+            case '7':
+                k = 7;
+                break;
+            case '8':
+                k = 8;
+                break;
+            case '9':
+                k = 9;
+                break;
+            case '0':
+                k = 0;
+                break;
+        }
+        sum += k * pow(16, p--);
+    }
+    return sum;
 }

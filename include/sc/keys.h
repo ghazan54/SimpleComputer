@@ -1,7 +1,7 @@
 #pragma once
 
-#define KEY_F5 "\e[[E"
-#define KEY_F6 "\e[[E"
+#define KEY_F5 "\e[15~"
+#define KEY_F6 "\e[17~"
 #define KEY_UP "\e[A"
 #define KEY_DOWN "\e[B"
 #define KEY_RIGHT "\e[C"

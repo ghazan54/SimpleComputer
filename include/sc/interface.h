@@ -32,3 +32,6 @@ int I_printInputField(bool status, const char* format, ...);
 int I_printOutputField(const char* format, ...);
 int I_move_address_xy(const int d);
 int I_executeOperation(void);
+int I_setAccumulator(void);
+int I_setInstructionCounter(void);
+long long xtoll(char* s);
