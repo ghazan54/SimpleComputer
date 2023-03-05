@@ -4,10 +4,13 @@
 #define DEFAULT_FLAGS_COUNT (5)
 #define DEFAULT_COUNT_MEMORY_OPERATIONS (38)
 #define DEFAULT_BLOCK_ENCODE_BITS (7)
+#define DEFAULT_MAX_STRS (10)
 
 #define MASK_LOW_BIT (0x1)
 #define MASK_OPERAND_BITS (0x7f)
 #define MASK_COMMAND_BITS (MASK_OPERAND_BITS << DEFAULT_BLOCK_ENCODE_BITS)
+
+#define SAVE_PATH "data/myMemory.data"
 
 enum error_bits_memory {
     err_overflow = 1,
@@ -32,4 +35,5 @@ int sc_regGet(int registr, int* value);
 int sc_commandEncode(int command, int operand, int* value);
 int sc_commandDecode(int value, int* command, int* operand);
 void sc_memoryOutput(void);
+void sc_memoryAddressOutput(int x, int y);
 int sc_memoryFree(void);

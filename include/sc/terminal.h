@@ -21,7 +21,8 @@ enum colors {
     color_blue,
     color_purple,
     color_aqua,
-    color_white
+    color_white,
+    color_default = 9
 };
 
 int mt_clrscr(void);
