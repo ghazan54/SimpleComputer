@@ -5,7 +5,7 @@ TEST_NAME = test
 CFLAGS = -g -Wall -Wextra 
 CPPFLAGS = -I include/
 TESTFLAGS = -I thirdparty/
-LDFLAGS =
+LDFLAGS = -lm
 LDLIBS =
 
 BIN_DIR = bin
@@ -27,13 +27,15 @@ MODULE_1_LIB = mySimpleComputer
 MODULE_2_LIB = myTerm
 MODULE_3_LIB = myBigChars
 MODULE_4_LIB = myReadkey
+MODULE_6_LIB = CU
 MODULE_0 = interface
 MODULE_1 = ram-operations
 MODULE_2 = terminal
 MODULE_3 = bigchar
 MODULE_4 = keys
+MODULE_6 = CU
 
-MODULES_LINK = $(LIB_DIR)/$(MODULE_0_LIB).a $(LIB_DIR)/$(MODULE_1_LIB).a $(LIB_DIR)/$(MODULE_2_LIB).a $(LIB_DIR)/$(MODULE_3_LIB).a $(LIB_DIR)/$(MODULE_4_LIB).a
+MODULES_LINK = $(LIB_DIR)/$(MODULE_0_LIB).a $(LIB_DIR)/$(MODULE_1_LIB).a $(LIB_DIR)/$(MODULE_2_LIB).a $(LIB_DIR)/$(MODULE_3_LIB).a $(LIB_DIR)/$(MODULE_4_LIB).a $(LIB_DIR)/$(MODULE_6_LIB).a
 
 .PHONY: all
 
@@ -68,6 +70,9 @@ $(LIB_DIR)/$(MODULE_3_LIB).a: $(OBJ_DIR)/$(MODULE_3).o
 $(LIB_DIR)/$(MODULE_4_LIB).a: $(OBJ_DIR)/$(MODULE_4).o
 	ar rcs $@ $^
 
+$(LIB_DIR)/$(MODULE_6_LIB).a: $(OBJ_DIR)/$(MODULE_6).o
+	ar rcs $@ $^
+
 $(OBJ_DIR)/$(MODULE_0).o : $(SRC_LIBS)/$(MODULE_0).c
 	$(CC) -c $(CFLAGS) $(CPPFLAGS) $^ -o $@
 
@@ -81,6 +86,9 @@ $(OBJ_DIR)/$(MODULE_3).o : $(SRC_LIBS)/$(MODULE_3).c
 	$(CC) -c $(CFLAGS) $(CPPFLAGS) $^ -o $@
 
 $(OBJ_DIR)/$(MODULE_4).o : $(SRC_LIBS)/$(MODULE_4).c
+	$(CC) -c $(CFLAGS) $(CPPFLAGS) $^ -o $@
+
+$(OBJ_DIR)/$(MODULE_6).o : $(SRC_LIBS)/$(MODULE_6).c
 	$(CC) -c $(CFLAGS) $(CPPFLAGS) $^ -o $@
 
 run:

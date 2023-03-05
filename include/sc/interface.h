@@ -4,6 +4,8 @@
 #include <sc/keys.h>
 #include <sc/ram-operations.h>
 #include <sc/terminal.h>
+#include <stdarg.h>
+#include <stdbool.h>
 
 #define I_POS_ACCUMULATOR_X 2
 #define I_POS_ACCUMULATOR_Y 71
@@ -26,5 +28,7 @@ int I_printoperations(void);
 int I_printflags(void);
 int I_startsc(void);
 int I_printcustomfields(void);
-int I_printOutField(void);
-int I_printErrField(void);
+int I_printInputField(bool status, const char* format, ...);
+int I_printOutputField(const char* format, ...);
+int I_move_address_xy(const int d);
+int I_executeOperation(void);

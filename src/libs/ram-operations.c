@@ -111,8 +111,8 @@ void sc_memoryOutput(void) {
 
 void sc_memoryAddressOutput(int x, int y) {
     if (x < 10 && y < 10) {
-        int val = memory[DEFAULT_MAX_STRS * x + y] & 0x3FFF;
-        memory[DEFAULT_MAX_STRS * x + y] & 0x4000 ? printf("-") : printf("+");
+        int val = memory[DEFAULT_MAX_STRS * x + y] & 0xFFFF;
+        memory[DEFAULT_MAX_STRS * x + y] < 0 ? printf("-") : printf("+");
         printf("%04X", val);
     }
 }

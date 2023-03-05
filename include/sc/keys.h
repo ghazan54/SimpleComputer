@@ -7,7 +7,20 @@
 #define KEY_RIGHT "\e[C"
 #define KEY_LEFT "\e[D"
 
-enum keys { key_L, key_S, key_R, key_T, key_I, key_F5, key_F6, key_UP, key_DOWN, key_RIGHT, key_LEFT };
+enum keys {
+    key_L,
+    key_S,
+    key_R,
+    key_T,
+    key_I,
+    key_F5,
+    key_F6,
+    key_UP,
+    key_DOWN,
+    key_RIGHT,
+    key_LEFT,
+    key_ENTER
+};
 
 int rk_readkey(enum keys* key);
 int rk_keyaction(const enum keys key);

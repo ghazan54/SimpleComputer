@@ -1,7 +1,7 @@
 #include <fcntl.h>
+#include <sc/CU.h>
 #include <sc/interface.h>
 #include <signal.h>
-#include <stdbool.h>
 #include <stdio.h>
 #include <stdio_ext.h>
 #include <stdlib.h>
@@ -10,9 +10,7 @@
 static int base_x = 2;
 static int base_y = 2;
 
-static int accumulator = 0;
 static int instructionCounter = 0;
-static int operations = 0;
 static int cur_command = 0;
 
 static int cur_x = 0;
@@ -26,20 +24,20 @@ int I_simplecomputer(void) {
         bc_box(10, 63, 12, 84) || bc_box(13, 1, 22, 46) || bc_box(13, 47, 22, 84) || bc_box(23, 1, 25, 46) ||
         bc_box(23, 47, 25, 84))
         return EXIT_FAILURE;
-    sc_regSet(err_division_by_zero, 1);
-    sc_regSet(err_ignoring_clock_pulses, 1);
-    sc_regSet(err_invalid_command, 1);
-    sc_regSet(err_out_of_range, 1);
-    sc_regSet(err_overflow, 1);
-    for (int i = 0; i < DEFAULT_MEMORY_INIT; ++i) {
-        sc_memorySet(i, i + 2);
-    }
+    // sc_regSet(err_division_by_zero, 1);
+    // sc_regSet(err_ignoring_clock_pulses, 1);
+    // sc_regSet(err_invalid_command, 1);
+    // sc_regSet(err_out_of_range, 1);
+    // sc_regSet(err_overflow, 1);
+    // for (int i = 0; i < DEFAULT_MEMORY_INIT; ++i) {
+    //     sc_memorySet(i, i + 2);
+    // }
     I_printall();
     I_startsc();
     return EXIT_SUCCESS;
 }
 
-int move_address_xy(const int d) {
+int I_move_address_xy(const int d) {
     if (I_printhex(cur_x, cur_y, color_default, color_default)) return EXIT_FAILURE;
     switch (d) {
         case 0:
@@ -74,21 +72,24 @@ int move_address_xy(const int d) {
 }
 
 void I_stopsc(int sig) {
-    // tcsetattr(STDIN_FILENO, TCSAFLUSH, &old_term);
     sig = sc_memoryFree();
+    mt_gotoXY(26, 0);
     exit(EXIT_SUCCESS);
 }
 
 int I_startsc(void) {
+    rk_mytermregime(0, 0, 1, 0, 1);
     while (1) {
         signal(SIGINT, I_stopsc);
         if (I_printhex(cur_x, cur_y, color_red, color_default)) return EXIT_FAILURE;
         if (I_printinstructionCounter()) return EXIT_FAILURE;
         if (I_printoperations()) return EXIT_FAILURE;
-        if (mt_gotoXY(26, 0)) return EXIT_FAILURE;
-        int key;
-        rk_readkey((enum keys*)(&key));
+        if (mt_gotoXY(24, 5)) return EXIT_FAILURE;
+        enum keys key = 99;
+        rk_readkey(&key);
+        rk_keyaction(key);
         I_printbig(cur_x, cur_y);
+        I_printflags();
     }
     return EXIT_SUCCESS;
 }
@@ -275,8 +276,8 @@ int I_printoperations() {
     if (mt_gotoXY(7, 68)) return EXIT_FAILURE;
     printf(" Operation ");
     if (mt_gotoXY(I_POS_OPERATION_X, I_POS_OPERATION_Y)) return EXIT_FAILURE;
-    operations = instructionCounter | (cur_command << 8);
-    sc_commandDecode(operations, &cur_command, &instructionCounter);
+    // operations = instructionCounter | (cur_command << 8);
+    // sc_commandDecode(operations, &cur_command, &instructionCounter);
     printf("+%02X : %02X", cur_command, instructionCounter);
     return EXIT_SUCCESS;
 }
@@ -303,11 +304,53 @@ int I_printcustomfields() {
     // bc_box(23, 1, 25, 46) || bc_box(23, 47, 25, 84)
     if (mt_gotoXY(23, 3)) return EXIT_FAILURE;
     printf(" Input ");
+    if (mt_gotoXY(24, 2)) return EXIT_FAILURE;
+    printf(" > ");
     if (mt_gotoXY(23, 49)) return EXIT_FAILURE;
     printf(" Output ");
     return EXIT_SUCCESS;
 }
 
-int I_printOutField() {}
+int I_printInputField(bool status, const char* format, ...) {
+    if (mt_gotoXY(24, 2)) return EXIT_FAILURE;
+    for (int i = 1; i < 45; ++i) printf(" ");
+    if (mt_gotoXY(24, 2)) return EXIT_FAILURE;
+    status ? printf(" \e[31m>\e[39m ") : printf(" > ");
+    if (format) {
+        va_list ap;
+        va_start(ap, format);
+        vprintf(format, ap);
+    }
+    return EXIT_SUCCESS;
+}
 
-int I_printErrField() {}
+int I_printOutputField(const char* format, ...) {
+    if (mt_gotoXY(24, 49)) return EXIT_FAILURE;
+    for (int i = 49; i < 84; ++i) printf(" ");
+    if (mt_gotoXY(24, 49)) return EXIT_FAILURE;
+    if (format) {
+        va_list ap;
+        va_start(ap, format);
+        vprintf(format, ap);
+    }
+    return EXIT_SUCCESS;
+}
+
+int I_executeOperation() {
+    if (rk_mytermsave()) return EXIT_FAILURE;
+    if (rk_mytermregime(0, 0, 2, 1, 0)) return EXIT_FAILURE;
+    char bf[3] = {0};
+    int ret = 0;
+    I_printInputField(1, NULL);
+    if (read(STDIN_FILENO, bf, 2) == -1) return EXIT_FAILURE;
+    cur_command = atoi(bf);
+    if (sc_commandEncode(cur_command, instructionCounter, &operations)) {
+        I_printOutputField("Unknown command '%s'", bf);
+        sc_regSet(err_invalid_command, 1);
+    } else {
+        ret = CU(operations);
+    }
+    I_printInputField(0, NULL);
+    if (rk_mytermrestore()) return EXIT_FAILURE;
+    return ret;
+}
