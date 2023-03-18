@@ -16,8 +16,8 @@ static int base_y = 2;
 
 static int instructionCounter = 0;
 
-static int cur_x = 0;
-static int cur_y = 0;
+int cur_x = 0;
+int cur_y = 0;
 
 const static int bigChars[][2] = {
     {0x8181817E, 0x7E818181}, {0x40485060, 0x40404040}, {0x2040423C, 0x7E040810}, {0x7C40407C, 0x7C404040},
@@ -34,14 +34,6 @@ int I_simplecomputer(void) {
         bc_box(10, 63, 12, 84) || bc_box(13, 1, 22, 46) || bc_box(13, 47, 22, 84) || bc_box(23, 1, 25, 46) ||
         bc_box(23, 47, 25, 84))
         return EXIT_FAILURE;
-    // sc_regSet(err_division_by_zero, 1);
-    // sc_regSet(err_ignoring_clock_pulses, 1);
-    // sc_regSet(err_invalid_command, 1);
-    // sc_regSet(err_out_of_range, 1);
-    // sc_regSet(err_overflow, 1);
-    // for (int i = 0; i < DEFAULT_MEMORY_INIT; ++i) {
-    //     sc_memorySet(i, i + 2);
-    // }
     I_printall();
     I_startsc();
     return EXIT_SUCCESS;
@@ -320,17 +312,10 @@ int I_printOutputField(const char* format, ...) {
 }
 
 int I_executeOperation() {
-    if (rk_mytermsave()) return EXIT_FAILURE;
-    if (rk_mytermregime(0, 0, 4, 1, 0)) return EXIT_FAILURE;
-    char bf[6] = {0};
     int ret = 0;
-    if (sc_commandEncode(10, instructionCounter, &operations)) {
-        I_printOutputField("Unknown command '%s'", bf);
-        sc_regSet(err_invalid_command, 1);
-    } else {
-        ret = CU(operations);
-    }
-    if (rk_mytermrestore()) return EXIT_FAILURE;
+    int tmp;
+    if (sc_memoryGet(instructionCounter, &tmp)) return EXIT_FAILURE;
+    ret = CU(tmp);
     return ret;
 }
 
@@ -432,6 +417,8 @@ long long xtoll(char* s) {
             case '0':
                 k = 0;
                 break;
+            default:
+                return 0;
         }
         sum += k * pow(16, p--);
     }

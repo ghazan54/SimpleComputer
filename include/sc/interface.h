@@ -16,6 +16,9 @@
 #define I_POS_FLAGS_X 11
 #define I_POS_FLAGS_Y 69
 
+extern int cur_x;
+extern int cur_y;
+
 int I_simplecomputer(void);
 int I_printall(void);
 int I_printhex(int x, int y, enum colors fg, enum colors bg);

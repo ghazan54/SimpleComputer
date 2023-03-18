@@ -1,3 +1,4 @@
+#include <sc/CU.h>
 #include <sc/interface.h>
 #include <sc/keys.h>
 #include <sc/ram-operations.h>
@@ -68,7 +69,7 @@ int rk_keyaction(const enum keys key) {
         case key_LEFT:
             return I_move_address_xy(3);
         case key_ENTER:
-            return I_executeOperation();
+            return cu_read(cur_x * DEFAULT_MAX_STRS + cur_y);
         default:
             // I_printOutputField("Unknow key");
             break;
