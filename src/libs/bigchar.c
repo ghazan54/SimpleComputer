@@ -45,12 +45,9 @@ int bc_box(int x1, int y1, const int x2, const int y2) {
 }
 
 int bc_printbigchar(const int n1[2], int x, int y, enum colors fg, enum colors bg) {
-    int n[] = {0, 0};
-    memcpy(n, n1, sizeof(int) * 2);
+    int n[] = {n1[0], n1[1]};
     if (mt_setfgcolor(fg)) return EXIT_FAILURE;
-
     if (mt_setbgcolor(bg)) return EXIT_FAILURE;
-
     for (int i = 0; i < 2; ++i) {
         for (int j = 0; j < 4; ++j) {
             if (mt_gotoXY(x++, y)) return EXIT_FAILURE;

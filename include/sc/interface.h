@@ -43,3 +43,9 @@ int I_setInstructionCounter(void);
 int I_ignoreimp(void);
 int I_restartsc(void);
 long long xtoll(char* s);
+
+//* sighandler
+
+void I_stopsc(int sig);
+void I_sigalarm(int sig);
+void I_sigusr1(int sig);

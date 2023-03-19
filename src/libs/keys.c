@@ -2,6 +2,7 @@
 #include <sc/interface.h>
 #include <sc/keys.h>
 #include <sc/ram-operations.h>
+#include <signal.h>
 #include <stdlib.h>
 #include <string.h>
 #include <sys/stat.h>
@@ -54,9 +55,10 @@ int rk_keyaction(const enum keys key) {
         case key_R:
             return I_ignoreimp();
         case key_T:
+            return I_scstep(0) || I_move_address_xy(2);
             break;
         case key_I:
-            return I_restartsc();
+            return raise(SIGUSR1);
         case key_F5:
             return I_setAccumulator();
         case key_F6:

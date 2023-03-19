@@ -59,6 +59,7 @@ int I_startsc() {
     while (1) {
         signal(SIGINT, I_stopsc);
         signal(SIGALRM, I_sigalarm);
+        signal(SIGUSR1, I_sigusr1);
         int rignore;
         if (sc_regGet(err_ignoring_clock_pulses, &rignore)) return EXIT_FAILURE;
         if (rignore) {
@@ -469,4 +470,10 @@ int I_restartsc(void) {
     nval.it_value.tv_sec = 0;
     nval.it_value.tv_usec = 0;
     return setitimer(ITIMER_REAL, &nval, &oval) || I_printall();
+}
+
+void I_sigusr1(int sig) {
+    sig = I_restartsc();
+    I_printOutputField("Try restart: %d", sig);
+    I_printOutputField(NULL);
 }
