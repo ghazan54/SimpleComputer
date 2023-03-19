@@ -46,13 +46,13 @@ int I_simplecomputer(void) {
 void I_stopsc(int sig) {
     lastsig = sig;
     sc_memoryFree();
-    mt_gotoXY(26, sig);
+    mt_gotoXY(26, 0);
     exit(EXIT_SUCCESS);
 }
 
 void I_sigalarm(int sig) {
     lastsig = sig;
-    I_move_address_xy(sig);
+    I_move_address_xy(2);
     I_scstep(0);
 }
 
