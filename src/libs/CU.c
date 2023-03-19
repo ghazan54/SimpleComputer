@@ -26,10 +26,10 @@ int cu_read(int operand) {
     char bf[5] = {0};
     I_printInputField(1, "Read: ");
     if (read(STDIN_FILENO, bf, 4) == -1) return EXIT_FAILURE;
+    I_printInputField(0, NULL);
     if (rk_mytermrestore()) return EXIT_FAILURE;
     long long c = xtoll(bf);
     if (!c && bf[0] != '0') return EXIT_FAILURE;
-    I_printInputField(0, NULL);
     return sc_memorySet(operand, c);
 }
 

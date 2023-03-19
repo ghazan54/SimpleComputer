@@ -9,6 +9,7 @@
 #include <stdio_ext.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/time.h>
 #include <unistd.h>
 
 static int base_x = 2;
@@ -19,16 +20,17 @@ static int instructionCounter = 0;
 int cur_x = 0;
 int cur_y = 0;
 
-const static int bigChars[][2] = {
-    {0x8181817E, 0x7E818181}, {0x40485060, 0x40404040}, {0x2040423C, 0x7E040810}, {0x7C40407C, 0x7C404040},
-    {0x7E424242, 0x40404040}, {0x7E02027E, 0x7E404040}, {0x7E02027E, 0x7E424242}, {0x4040407E, 0x40404040},
-    {0x7E42427E, 0x7E424242}, {0x7E42427E, 0x7E404040}, {0x7E42423C, 0x42424242}, {0x3E42423E, 0x3E424242},
-    {0x0101017E, 0x7E010101}, {0x4242221E, 0x1E224242}, {0x7E02027E, 0x7E020202}, {0x7E02027E, 0x02020202},
-    {0xFF181818, 0x181818FF}, {0xFF000000, 0xFF}};
+const int bigChars[][2] = {{0x8181817E, 0x7E818181}, {0x40485060, 0x40404040}, {0x2040423C, 0x7E040810},
+                           {0x7C40407C, 0x7C404040}, {0x7E424242, 0x40404040}, {0x7E02027E, 0x7E404040},
+                           {0x7E02027E, 0x7E424242}, {0x4040407E, 0x40404040}, {0x7E42427E, 0x7E424242},
+                           {0x7E42427E, 0x7E404040}, {0x7E42423C, 0x42424242}, {0x3E42423E, 0x3E424242},
+                           {0x0101017E, 0x7E010101}, {0x4242221E, 0x1E224242}, {0x7E02027E, 0x7E020202},
+                           {0x7E02027E, 0x02020202}, {0xFF181818, 0x181818FF}, {0xFF000000, 0xFF}};
 
 int I_simplecomputer(void) {
     setvbuf(stdout, NULL, _IONBF, 0);
-    if (mt_clrscr() || sc_memoryInit() || sc_regInit()) return EXIT_FAILURE;
+    if (mt_clrscr() || sc_memoryInit() || sc_regInit() || sc_regSet(err_ignoring_clock_pulses, 1))
+        return EXIT_FAILURE;
     if (mt_gotoXY(1, 1)) return EXIT_FAILURE;
     if (bc_box(1, 1, 12, 62) || bc_box(1, 63, 3, 84) || bc_box(4, 63, 6, 84) || bc_box(7, 63, 9, 84) ||
         bc_box(10, 63, 12, 84) || bc_box(13, 1, 22, 46) || bc_box(13, 47, 22, 84) || bc_box(23, 1, 25, 46) ||
@@ -40,25 +42,41 @@ int I_simplecomputer(void) {
 }
 
 void I_stopsc(int sig) {
-    sig = sc_memoryFree();
-    mt_gotoXY(26, 0);
+    sc_memoryFree();
+    sig = 0;
+    mt_gotoXY(26, sig);
     exit(EXIT_SUCCESS);
 }
 
-int I_startsc(void) {
+void I_sigalarm(int sig) {
+    sig = 2;
+    I_move_address_xy(sig);
+    I_scstep(0);
+}
+
+int I_startsc() {
     rk_mytermregime(0, 0, 1, 0, 1);
     while (1) {
         signal(SIGINT, I_stopsc);
-        if (I_printhex(cur_x, cur_y, color_red, color_default)) return EXIT_FAILURE;
-        if (I_printinstructionCounter()) return EXIT_FAILURE;
-        if (I_printoperations()) return EXIT_FAILURE;
-        if (mt_gotoXY(24, 5)) return EXIT_FAILURE;
-        enum keys key = 99;
+        signal(SIGALRM, I_sigalarm);
+        int rignore;
+        if (sc_regGet(err_ignoring_clock_pulses, &rignore)) return EXIT_FAILURE;
+        if (I_scstep(rignore)) return EXIT_FAILURE;
+    }
+    return EXIT_SUCCESS;
+}
+
+int I_scstep(int rignore) {
+    if (I_printinstructionCounter()) return EXIT_FAILURE;
+    if (I_printoperations()) return EXIT_FAILURE;
+    if (mt_gotoXY(24, 5)) return EXIT_FAILURE;
+    enum keys key = 99;
+    if (rignore) {
         rk_readkey(&key);
         rk_keyaction(key);
-        I_printbig(cur_x, cur_y);
-        I_printflags();
     }
+    I_printbig(cur_x, cur_y);
+    I_printflags();
     return EXIT_SUCCESS;
 }
 
@@ -78,21 +96,27 @@ int I_move_address_xy(const int d) {
                 cur_x += 1;
             break;
         case 2:
-            if (cur_y == DEFAULT_MAX_STRS - 1)
+            if (cur_y == DEFAULT_MAX_STRS - 1) {
                 cur_y = 0;
-            else
+                cur_x = cur_x == DEFAULT_MAX_STRS - 1 ? 0 : cur_x + 1;
+            } else {
                 cur_y += 1;
+            }
             break;
         case 3:
-            if (!cur_y)
+            if (!cur_y) {
                 cur_y = DEFAULT_MAX_STRS - 1;
-            else
+                cur_x = !cur_x ? DEFAULT_MAX_STRS - 1 : cur_x - 1;
+            } else {
                 cur_y -= 1;
+            }
             break;
 
         default:
             break;
     }
+    instructionCounter = DEFAULT_MAX_STRS * cur_x + cur_y;
+    if (I_printhex(cur_x, cur_y, color_red, color_default)) return EXIT_FAILURE;
     return EXIT_SUCCESS;
 }
 
@@ -111,6 +135,7 @@ int I_printall(void) {
     }
     if (I_printbig(0, 0)) return EXIT_FAILURE;
     if (I_printkeys()) return EXIT_FAILURE;
+    if (I_printhex(cur_x, cur_y, color_red, color_default)) return EXIT_FAILURE;
     return EXIT_SUCCESS;
 }
 
@@ -240,7 +265,6 @@ int I_printinstructionCounter() {
     if (mt_gotoXY(4, 64)) return EXIT_FAILURE;
     printf(" instructionCounter ");
     if (mt_gotoXY(I_POS_IC_X, I_POS_IC_Y)) return EXIT_FAILURE;
-    instructionCounter = DEFAULT_MAX_STRS * cur_x + cur_y;
     printf("+%04X", instructionCounter);
     return EXIT_SUCCESS;
 }
@@ -423,4 +447,24 @@ long long xtoll(char* s) {
         sum += k * pow(16, p--);
     }
     return sum;
+}
+
+int I_ignoreimp() {
+    struct itimerval nval, oval;
+    nval.it_interval.tv_sec = 0;
+    nval.it_interval.tv_usec = 100000;
+    nval.it_value.tv_sec = 0;
+    nval.it_value.tv_usec = 100000;
+    return setitimer(ITIMER_REAL, &nval, &oval) || sc_regSet(err_ignoring_clock_pulses, 0);
+}
+
+int I_restartsc(void) {
+    if (sc_memoryFree() || sc_memoryInit() || sc_regInit() || sc_regSet(err_ignoring_clock_pulses, 1))
+        return EXIT_FAILURE;
+    struct itimerval nval, oval;
+    nval.it_interval.tv_sec = 0;
+    nval.it_interval.tv_usec = 0;
+    nval.it_value.tv_sec = 0;
+    nval.it_value.tv_usec = 0;
+    return setitimer(ITIMER_REAL, &nval, &oval) || I_printall();
 }
