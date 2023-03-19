@@ -55,7 +55,7 @@ int rk_keyaction(const enum keys key) {
         case key_R:
             return I_ignoreimp();
         case key_T:
-            return I_scstep(0) || I_move_address_xy(2);
+            return I_scstep(0, 1) || I_move_address_xy(2);
             break;
         case key_I:
             return raise(SIGUSR1);

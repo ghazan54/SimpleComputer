@@ -34,7 +34,7 @@ int I_printinstructionCounter(void);
 int I_printoperations(void);
 int I_printflags(void);
 int I_startsc(void);
-int I_scstep(int rignore);
+int I_scstep(int rignore, bool startcu);
 int I_printcustomfields(void);
 int I_printInputField(bool status, const char* format, ...);
 int I_printOutputField(const char* format, ...);
@@ -44,7 +44,7 @@ int I_setAccumulator(void);
 int I_setInstructionCounter(void);
 int I_ignoreimp(void);
 int I_restartsc(void);
-long long xtoll(char* s);
+int xtoll(char* s);
 
 //* sighandler
 

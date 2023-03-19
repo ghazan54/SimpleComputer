@@ -15,7 +15,7 @@
 static int base_x = 2;
 static int base_y = 2;
 
-static int instructionCounter = 0;
+int instructionCounter = 0;
 
 int lastsig = -1;
 
@@ -53,7 +53,7 @@ void I_stopsc(int sig) {
 void I_sigalarm(int sig) {
     lastsig = sig;
     I_move_address_xy(2);
-    I_scstep(0);
+    I_scstep(0, 1);
 }
 
 int I_startsc() {
@@ -65,13 +65,13 @@ int I_startsc() {
         int rignore;
         if (sc_regGet(err_ignoring_clock_pulses, &rignore)) return EXIT_FAILURE;
         if (rignore) {
-            if (I_scstep(rignore)) return EXIT_FAILURE;
+            if (I_scstep(rignore, 0)) return EXIT_FAILURE;
         }
     }
     return EXIT_SUCCESS;
 }
 
-int I_scstep(int rignore) {
+int I_scstep(int rignore, bool startcu) {
     if (I_printinstructionCounter()) return EXIT_FAILURE;
     if (I_printoperations()) return EXIT_FAILURE;
     if (I_printflags()) return EXIT_FAILURE;
@@ -82,7 +82,7 @@ int I_scstep(int rignore) {
         rk_readkey(&key);
         rk_keyaction(key);
     }
-    return EXIT_SUCCESS;
+    return startcu ? CU() : EXIT_SUCCESS;
 }
 
 int I_move_address_xy(const int d) {
@@ -231,8 +231,10 @@ int I_printbig(int x, int y) {
     int c;
     if (sc_memoryGet(DEFAULT_MAX_STRS * x + y, &c)) return EXIT_FAILURE;
     char digit[5];
-    sprintf(digit, "%04X", c);
-    char sign = c < 0 ? '-' : '+';
+    int command, operand;
+    if (sc_commandDecode(c, &command, &operand)) return EXIT_FAILURE;
+    sprintf(digit, "%02X%02X", command, operand);
+    char sign = c & 0x4000 ? '-' : '+';
     if (_I_printbig(sign, 14, 2) || _I_printbig(digit[0], 14, 11) || _I_printbig(digit[1], 14, 20) ||
         _I_printbig(digit[2], 14, 29) || _I_printbig(digit[3], 14, 38))
         EXIT_FAILURE;
@@ -340,14 +342,6 @@ int I_printOutputField(const char* format, ...) {
     return EXIT_SUCCESS;
 }
 
-int I_executeOperation() {
-    int ret = 0;
-    int tmp;
-    if (sc_memoryGet(instructionCounter, &tmp)) return EXIT_FAILURE;
-    ret = CU(tmp);
-    return ret;
-}
-
 int I_setAccumulator() {
     if (rk_mytermsave()) return EXIT_FAILURE;
     if (rk_mytermregime(0, 0, 4, 1, 0)) return EXIT_FAILURE;
@@ -357,7 +351,7 @@ int I_setAccumulator() {
     if (rk_mytermrestore()) return EXIT_FAILURE;
     I_printInputField(0, NULL);
     long long c = xtoll(bf);
-    if (c > INT32_MAX || c < INT32_MIN) {
+    if (c > 0x7f7f || c < -0x7f7f) {
         sc_regSet(err_out_of_range, 1);
         return EXIT_SUCCESS;
     }
@@ -380,7 +374,7 @@ int I_setInstructionCounter(void) {
     long long c = xtoll(bf);
     if (c > 0x63 || c < 0) {
         sc_regSet(err_out_of_range, 1);
-        return EXIT_SUCCESS;
+        return EXIT_FAILURE;
     }
     if (!c && bf[0] != '0') {
         return EXIT_FAILURE;
@@ -393,7 +387,7 @@ int I_setInstructionCounter(void) {
     return EXIT_FAILURE;
 }
 
-long long xtoll(char* s) {
+int xtoll(char* s) {
     int i, sum = 0, k;
     int p = (int)strlen(s) - 1;
     for (i = 0; s[i] != '\0'; i++) {

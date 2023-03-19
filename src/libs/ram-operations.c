@@ -21,7 +21,6 @@ int sc_memoryInit(void) {
     } else {
         return EXIT_FAILURE;
     }
-    // return memory ? EXIT_SUCCESS : EXIT_FAILURE;
 }
 
 int sc_memorySet(int address, int value) {
@@ -29,10 +28,10 @@ int sc_memorySet(int address, int value) {
         sc_regSet(err_out_of_range, 1);
         return EXIT_FAILURE;
     } else {
-        if (value > 0x3fff) {
-            sc_regSet(err_out_of_range, 1);
-            return EXIT_FAILURE;
-        }
+        // if (value > 0x3fff) {
+        //     sc_regSet(err_out_of_range, 1);
+        //     return EXIT_FAILURE;
+        // }
         memory[address] = value;
         return EXIT_SUCCESS;
     }
@@ -91,20 +90,22 @@ int sc_regGet(int registr, int* value) {
 int cmpint_bs(const void* a, const void* b) { return (*(int*)a - *(int*)b); }
 
 int sc_commandEncode(int command, int operand, int* value) {
-    if (!bsearch(&command, memory_operations_id, DEFAULT_COUNT_MEMORY_OPERATIONS, sizeof(int), cmpint_bs)) {
+    const int _c = command & 0x7f;
+    if (!bsearch(&_c, memory_operations_id, DEFAULT_COUNT_MEMORY_OPERATIONS, sizeof(int), cmpint_bs)) {
         sc_regSet(err_invalid_command, 1);
         return EXIT_FAILURE;
     }
-    *value = (((*value & 0) | operand) & MASK_OPERAND_BITS) |
-             ((command << DEFAULT_BLOCK_ENCODE_BITS) & MASK_COMMAND_BITS);
+    *value = 0;
+    *value = command << DEFAULT_BLOCK_ENCODE_BITS;
+    *value |= operand;
     return EXIT_SUCCESS;
 }
 
 int sc_commandDecode(int value, int* command, int* operand) {
-    if (((value & 0x4000) >> 14) & MASK_LOW_BIT)  // 0x4000 == 0x100000000000000
-        return EXIT_FAILURE;
+    // if (((value & 0x4000) >> 14) & MASK_LOW_BIT) // 0x4000 == 0x100000000000000
+    //     return EXIT_FAILURE;
     *operand = value & MASK_OPERAND_BITS;
-    *command = (value & MASK_COMMAND_BITS) >> DEFAULT_BLOCK_ENCODE_BITS;
+    *command = (value >> DEFAULT_BLOCK_ENCODE_BITS) & MASK_OPERAND_BITS;
     return EXIT_SUCCESS;
 }
 
@@ -114,10 +115,12 @@ void sc_memoryOutput(void) {
 }
 
 void sc_memoryAddressOutput(int x, int y) {
-    if (x < 10 && y < 10) {
-        int val = memory[DEFAULT_MAX_STRS * x + y] & 0xFFFF;
-        memory[DEFAULT_MAX_STRS * x + y] < 0 ? printf("-") : printf("+");
-        printf("%04X", val);
+    if (x < 10 && y < 10 && x >= 0 && y >= 0) {
+        int val, command, operand;
+        if (sc_memoryGet(DEFAULT_MAX_STRS * x + y, &val) ||
+            sc_commandDecode(val & 0x3FFF, &command, &operand))
+            return;
+        printf("%c%02X%02X", val & 0x4000 ? '-' : '+', command, operand);
     }
 }
 
