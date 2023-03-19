@@ -21,6 +21,8 @@
 extern int cur_x;
 extern int cur_y;
 
+extern int lastsig;
+
 int I_simplecomputer(void);
 int I_printall(void);
 int I_printhex(int x, int y, enum colors fg, enum colors bg);
