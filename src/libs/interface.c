@@ -17,6 +17,8 @@ static int base_y = 2;
 
 static int instructionCounter = 0;
 
+int lastsig = -1;
+
 int cur_x = 0;
 int cur_y = 0;
 
@@ -42,14 +44,14 @@ int I_simplecomputer(void) {
 }
 
 void I_stopsc(int sig) {
+    lastsig = sig;
     sc_memoryFree();
-    sig = 0;
     mt_gotoXY(26, sig);
     exit(EXIT_SUCCESS);
 }
 
 void I_sigalarm(int sig) {
-    sig = 2;
+    lastsig = sig;
     I_move_address_xy(sig);
     I_scstep(0);
 }
@@ -473,7 +475,6 @@ int I_restartsc(void) {
 }
 
 void I_sigusr1(int sig) {
-    sig = I_restartsc();
-    I_printOutputField("Try restart: %d", sig);
-    I_printOutputField(NULL);
+    lastsig = sig;
+    I_restartsc();
 }

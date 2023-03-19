@@ -102,7 +102,7 @@ clean:
 
 rebuild: clean all
 
-test: create_dirs $(BIN_DIR)/test_$(MODULE_1).out $(BIN_DIR)/test_$(MODULE_2).out $(BIN_DIR)/test_$(MODULE_3).out $(BIN_DIR)/test_$(MODULE_4).out
+test: create_dirs $(BIN_DIR)/test_$(MODULE_1).out $(BIN_DIR)/test_$(MODULE_2).out $(BIN_DIR)/test_$(MODULE_3).out $(BIN_DIR)/test_$(MODULE_4).out $(BIN_DIR)/test_signals.out
 
 # $(TEST_PATH) : $(SRC_TEST)/main.c $(SRC_TEST)/$(TEST_NAME).c $(LIB_DIR)/$(MODULE_1_LIB).a $(LIB_DIR)/$(MODULE_2_LIB).a
 # 	$(CC) $(CFLAGS) $(CPPFLAGS) $(TESTFLAGS) $^ -o $@ $(LDFLAGS) $(LDLIBS)
@@ -117,6 +117,9 @@ $(BIN_DIR)/test_$(MODULE_3).out: $(SRC_TEST)/test.c $(SRC_TEST)/test_$(MODULE_3)
 	$(CC) $(CFLAGS) $(CPPFLAGS) $(TESTFLAGS) $^ -o $@ $(LDFLAGS) $(LDLIBS)
 
 $(BIN_DIR)/test_$(MODULE_4).out: $(SRC_TEST)/test.c $(SRC_TEST)/test_$(MODULE_4).c $(LIB_DIR)/$(MODULE_4_LIB).a $(LIB_DIR)/$(MODULE_0_LIB).a $(LIB_DIR)/$(MODULE_1_LIB).a $(LIB_DIR)/$(MODULE_2_LIB).a $(LIB_DIR)/$(MODULE_3_LIB).a $(LIB_DIR)/$(MODULE_6_LIB).a
+	$(CC) $(CFLAGS) $(CPPFLAGS) $(TESTFLAGS) $^ -o $@ $(LDFLAGS) $(LDLIBS)
+
+$(BIN_DIR)/test_signals.out: $(SRC_TEST)/test.c $(SRC_TEST)/test_signals.c $(MODULES_LINK)
 	$(CC) $(CFLAGS) $(CPPFLAGS) $(TESTFLAGS) $^ -o $@ $(LDFLAGS) $(LDLIBS)
 
 # test_run:
