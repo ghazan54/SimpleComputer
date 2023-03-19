@@ -12,13 +12,7 @@
 #include <unistd.h>
 
 int mt_clrscr(void) {
-    int term;
-    if ((term = open(TERMINAL, O_WRONLY)) == -1) {
-        return EXIT_FAILURE;
-    }
-    int c = write(term, "\e[H\e[J", strlen("\e[H\e[J"));
-    close(term);
-    return c != -1 ? EXIT_SUCCESS : EXIT_FAILURE;
+    return write(STDOUT_FILENO, "\e[H\e[J", strlen("\e[H\e[J")) != -1 ? EXIT_SUCCESS : EXIT_FAILURE;
 }
 
 int mt_getscreensize(int* rows, int* columns) {
@@ -34,41 +28,22 @@ int mt_getscreensize(int* rows, int* columns) {
 
 int mt_gotoXY(int x, int y) {
     int row, col;
-    mt_getscreensize(&row, &col);
-    if (((x > row) || (x < 0)) || ((y > col) || (y < 0))) {
+    if (mt_getscreensize(&row, &col) || ((x > row) || (x < 0)) || ((y > col) || (y < 0))) {
         return EXIT_FAILURE;
     }
     char s[BUFSIZ];
     sprintf(s, "\e[%d;%dH", x, y);
-    int term;
-    if ((term = open(TERMINAL, O_WRONLY)) == -1) {
-        return EXIT_FAILURE;
-    }
-    int c = write(term, s, strlen(s));
-    close(term);
-    return c != -1 ? EXIT_SUCCESS : EXIT_FAILURE;
+    return write(STDOUT_FILENO, s, strlen(s)) != -1 ? EXIT_SUCCESS : EXIT_FAILURE;
 }
 
 int mt_setfgcolor(enum colors color) {
     char s[BUFSIZ];
     sprintf(s, "\e[0;3%dm", color);
-    int term;
-    if ((term = open(TERMINAL, O_WRONLY)) == -1) {
-        return EXIT_FAILURE;
-    }
-    int c = write(term, s, strlen(s));
-    close(term);
-    return c != -1 ? EXIT_SUCCESS : EXIT_FAILURE;
+    return write(STDOUT_FILENO, s, strlen(s)) != -1 ? EXIT_SUCCESS : EXIT_FAILURE;
 }
 
 int mt_setbgcolor(enum colors color) {
     char s[BUFSIZ];
     sprintf(s, "\e[4%dm", color);
-    int term;
-    if ((term = open(TERMINAL, O_WRONLY)) == -1) {
-        return EXIT_FAILURE;
-    }
-    int c = write(term, s, strlen(s));
-    close(term);
-    return c != -1 ? EXIT_SUCCESS : EXIT_FAILURE;
+    return write(STDOUT_FILENO, s, strlen(s)) != -1 ? EXIT_SUCCESS : EXIT_FAILURE;
 }

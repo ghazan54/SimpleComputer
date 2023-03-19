@@ -29,6 +29,10 @@ int sc_memorySet(int address, int value) {
         sc_regSet(err_out_of_range, 1);
         return EXIT_FAILURE;
     } else {
+        if (value > 0x3fff) {
+            sc_regSet(err_out_of_range, 1);
+            return EXIT_FAILURE;
+        }
         memory[address] = value;
         return EXIT_SUCCESS;
     }
@@ -110,9 +114,11 @@ void sc_memoryOutput(void) {
 }
 
 void sc_memoryAddressOutput(int x, int y) {
-    int val = memory[DEFAULT_MAX_STRS * x + y] & 0x3FFF;
-    memory[DEFAULT_MAX_STRS * x + y] & 0x4000 ? printf("-") : printf("+");
-    printf("%04X", val);
+    if (x < 10 && y < 10) {
+        int val = memory[DEFAULT_MAX_STRS * x + y] & 0xFFFF;
+        memory[DEFAULT_MAX_STRS * x + y] < 0 ? printf("-") : printf("+");
+        printf("%04X", val);
+    }
 }
 
 int sc_memoryFree(void) {

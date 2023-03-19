@@ -1,47 +1,68 @@
+#include <ctype.h>
 #include <fcntl.h>
+#include <math.h>
+#include <sc/CU.h>
 #include <sc/interface.h>
 #include <signal.h>
-#include <stdbool.h>
+#include <stdint.h>
 #include <stdio.h>
 #include <stdio_ext.h>
 #include <stdlib.h>
-#include <termios.h>
+#include <string.h>
 #include <unistd.h>
 
 static int base_x = 2;
 static int base_y = 2;
 
-static int accumulator = 0;
 static int instructionCounter = 0;
-static int operations = 0;
-static int cur_command = 0;
 
-static int cur_x = 0;
-static int cur_y = 0;
+int cur_x = 0;
+int cur_y = 0;
 
-static struct termios cur_term, old_term;
+const static int bigChars[][2] = {
+    {0x8181817E, 0x7E818181}, {0x40485060, 0x40404040}, {0x2040423C, 0x7E040810}, {0x7C40407C, 0x7C404040},
+    {0x7E424242, 0x40404040}, {0x7E02027E, 0x7E404040}, {0x7E02027E, 0x7E424242}, {0x4040407E, 0x40404040},
+    {0x7E42427E, 0x7E424242}, {0x7E42427E, 0x7E404040}, {0x7E42423C, 0x42424242}, {0x3E42423E, 0x3E424242},
+    {0x0101017E, 0x7E010101}, {0x4242221E, 0x1E224242}, {0x7E02027E, 0x7E020202}, {0x7E02027E, 0x02020202},
+    {0xFF181818, 0x181818FF}, {0xFF000000, 0xFF}};
 
 int I_simplecomputer(void) {
     setvbuf(stdout, NULL, _IONBF, 0);
     if (mt_clrscr() || sc_memoryInit() || sc_regInit()) return EXIT_FAILURE;
     if (mt_gotoXY(1, 1)) return EXIT_FAILURE;
     if (bc_box(1, 1, 12, 62) || bc_box(1, 63, 3, 84) || bc_box(4, 63, 6, 84) || bc_box(7, 63, 9, 84) ||
-        bc_box(10, 63, 12, 84) || bc_box(13, 1, 22, 46) || bc_box(13, 47, 22, 84))
+        bc_box(10, 63, 12, 84) || bc_box(13, 1, 22, 46) || bc_box(13, 47, 22, 84) || bc_box(23, 1, 25, 46) ||
+        bc_box(23, 47, 25, 84))
         return EXIT_FAILURE;
-    sc_regSet(err_division_by_zero, 1);
-    sc_regSet(err_ignoring_clock_pulses, 1);
-    sc_regSet(err_invalid_command, 1);
-    sc_regSet(err_out_of_range, 1);
-    sc_regSet(err_overflow, 1);
-    for (int i = 0; i < DEFAULT_MEMORY_INIT; ++i) {
-        sc_memorySet(i, i + 2);
-    }
     I_printall();
     I_startsc();
     return EXIT_SUCCESS;
 }
 
-int move_address_xy(const int d) {
+void I_stopsc(int sig) {
+    sig = sc_memoryFree();
+    mt_gotoXY(26, 0);
+    exit(EXIT_SUCCESS);
+}
+
+int I_startsc(void) {
+    rk_mytermregime(0, 0, 1, 0, 1);
+    while (1) {
+        signal(SIGINT, I_stopsc);
+        if (I_printhex(cur_x, cur_y, color_red, color_default)) return EXIT_FAILURE;
+        if (I_printinstructionCounter()) return EXIT_FAILURE;
+        if (I_printoperations()) return EXIT_FAILURE;
+        if (mt_gotoXY(24, 5)) return EXIT_FAILURE;
+        enum keys key = 99;
+        rk_readkey(&key);
+        rk_keyaction(key);
+        I_printbig(cur_x, cur_y);
+        I_printflags();
+    }
+    return EXIT_SUCCESS;
+}
+
+int I_move_address_xy(const int d) {
     if (I_printhex(cur_x, cur_y, color_default, color_default)) return EXIT_FAILURE;
     switch (d) {
         case 0:
@@ -75,117 +96,12 @@ int move_address_xy(const int d) {
     return EXIT_SUCCESS;
 }
 
-void I_stopsc(int sig) {
-    tcsetattr(STDIN_FILENO, TCSAFLUSH, &old_term);
-    sig = sc_memoryFree();
-    exit(sig ? EXIT_FAILURE : EXIT_SUCCESS);
-}
-
-int I_startsc(void) {
-    int cmd = -1;
-    tcgetattr(STDIN_FILENO, &old_term);
-    cur_term = old_term;
-    cur_term.c_lflag &= ~(ICANON | ECHO);
-    tcsetattr(STDIN_FILENO, TCSANOW, &cur_term);
-    while (1) {
-        if (I_printhex(cur_x, cur_y, color_red, color_default)) return EXIT_FAILURE;
-        if (I_printinstructionCounter()) return EXIT_FAILURE;
-        if (I_printoperations()) return EXIT_FAILURE;
-        if (mt_gotoXY(23, 0)) return EXIT_FAILURE;
-        char c = 0;
-        if (read(1, &c, 1) != 1) exit(EXIT_FAILURE);
-        switch (c) {
-            case '\033':
-                cmd = 1;
-                break;
-            case 'l':
-                cmd = 0;
-                printf("Press L\n");
-                break;
-            case '[':
-                if (cmd == 1) {
-                    cmd = 2;
-                } else {
-                    printf("Unknown key!!\n");
-                }
-                break;
-            case '1':
-                if (cmd == 2) {
-                    cmd = 3;
-                } else {
-                    printf("Unknown key!!\n");
-                }
-                break;
-            case '5':
-                if (cmd == 3) {
-                    cmd = 4;
-                } else {
-                    printf("Unknown key!!\n");
-                }
-                break;
-            case '7':
-                if (cmd == 3) {
-                    cmd = 5;
-                } else {
-                    printf("Unknown key!!\n");
-                }
-                break;
-            case '~':
-                if (cmd == 4) {
-                    printf("Pressed F5!\n");
-                    cmd = 0;
-                } else if (cmd == 5) {
-                    printf("Pressed F6!\n");
-                    cmd = 0;
-                } else {
-                    printf("Unknown key!!\n");
-                }
-                break;
-            case 'A':
-                if (cmd == 2) {
-                    move_address_xy(0);
-                    cmd = 0;
-                } else {
-                    printf("Unknown key!!\n");
-                }
-                break;
-            case 'B':
-                if (cmd == 2) {
-                    move_address_xy(1);
-                    cmd = 0;
-                } else {
-                    printf("Unknown key!!\n");
-                }
-                break;
-            case 'C':
-                if (cmd == 2) {
-                    move_address_xy(2);
-                    cmd = 0;
-                } else {
-                    printf("Unknown key!!\n");
-                }
-                break;
-            case 'D':
-                if (cmd == 2) {
-                    move_address_xy(3);
-                    cmd = 0;
-                } else {
-                    printf("Unknown key!!\n");
-                }
-                break;
-        }
-        signal(SIGINT, I_stopsc);
-        I_printbig(cur_x, cur_y);
-    }
-    return EXIT_SUCCESS;
-}
-
 int I_printall(void) {
     if (I_printinfo('a', color_default, color_default)) return EXIT_FAILURE;
     if (I_printinfo('i', color_default, color_default)) return EXIT_FAILURE;
     if (I_printinfo('o', color_default, color_default)) return EXIT_FAILURE;
     if (I_printinfo('f', color_default, color_default)) return EXIT_FAILURE;
-
+    if (I_printcustomfields()) return EXIT_FAILURE;
     if (mt_gotoXY(1, 29)) return EXIT_FAILURE;
     printf(" Memory ");
     for (int i = 0; i < DEFAULT_MAX_STRS; ++i) {
@@ -238,73 +154,44 @@ int I_printinfo(const char I, enum colors fg, enum colors bg) {
     return c;
 }
 
-int createbigchar(int n[2], char* bc) {
-    int c = 0;
-    for (int x = 0; x < 8; ++x) {
-        for (int y = 0; y < 8; ++y) {
-            if (bc_setbigcharpos(n, x, y, bc[c++])) return EXIT_FAILURE;
-        }
-    }
-    return EXIT_SUCCESS;
-}
-
 int _I_printbig(const char d, int x, int y) {
-    int n[2];
     switch (d) {
         case '0':
-            createbigchar(n, big_char_0);
-            return bc_printbigchar(n, x, y, color_default, color_default);
+            return bc_printbigchar(bigChars[0], x, y, color_default, color_default);
         case '1':
-            createbigchar(n, big_char_1);
-            return bc_printbigchar(n, x, y, color_default, color_default);
+            return bc_printbigchar(bigChars[1], x, y, color_default, color_default);
         case '2':
-            createbigchar(n, big_char_2);
-            return bc_printbigchar(n, x, y, color_default, color_default);
+            return bc_printbigchar(bigChars[2], x, y, color_default, color_default);
         case '3':
-            createbigchar(n, big_char_3);
-            return bc_printbigchar(n, x, y, color_default, color_default);
+            return bc_printbigchar(bigChars[3], x, y, color_default, color_default);
         case '4':
-            createbigchar(n, big_char_4);
-            return bc_printbigchar(n, x, y, color_default, color_default);
+            return bc_printbigchar(bigChars[4], x, y, color_default, color_default);
         case '5':
-            createbigchar(n, big_char_5);
-            return bc_printbigchar(n, x, y, color_default, color_default);
+            return bc_printbigchar(bigChars[5], x, y, color_default, color_default);
         case '6':
-            createbigchar(n, big_char_6);
-            return bc_printbigchar(n, x, y, color_default, color_default);
+            return bc_printbigchar(bigChars[6], x, y, color_default, color_default);
         case '7':
-            createbigchar(n, big_char_7);
-            return bc_printbigchar(n, x, y, color_default, color_default);
+            return bc_printbigchar(bigChars[7], x, y, color_default, color_default);
         case '8':
-            createbigchar(n, big_char_8);
-            return bc_printbigchar(n, x, y, color_default, color_default);
+            return bc_printbigchar(bigChars[8], x, y, color_default, color_default);
         case '9':
-            createbigchar(n, big_char_9);
-            return bc_printbigchar(n, x, y, color_default, color_default);
+            return bc_printbigchar(bigChars[9], x, y, color_default, color_default);
         case '+':
-            createbigchar(n, big_char_plus);
-            return bc_printbigchar(n, x, y, color_default, color_default);
+            return bc_printbigchar(bigChars[16], x, y, color_default, color_default);
         case '-':
-            createbigchar(n, big_char_minus);
-            return bc_printbigchar(n, x, y, color_default, color_default);
+            return bc_printbigchar(bigChars[17], x, y, color_default, color_default);
         case 'A':
-            createbigchar(n, big_char_A);
-            return bc_printbigchar(n, x, y, color_default, color_default);
+            return bc_printbigchar(bigChars[10], x, y, color_default, color_default);
         case 'B':
-            createbigchar(n, big_char_B);
-            return bc_printbigchar(n, x, y, color_default, color_default);
+            return bc_printbigchar(bigChars[11], x, y, color_default, color_default);
         case 'C':
-            createbigchar(n, big_char_C);
-            return bc_printbigchar(n, x, y, color_default, color_default);
+            return bc_printbigchar(bigChars[12], x, y, color_default, color_default);
         case 'D':
-            createbigchar(n, big_char_D);
-            return bc_printbigchar(n, x, y, color_default, color_default);
+            return bc_printbigchar(bigChars[13], x, y, color_default, color_default);
         case 'E':
-            createbigchar(n, big_char_E);
-            return bc_printbigchar(n, x, y, color_default, color_default);
+            return bc_printbigchar(bigChars[14], x, y, color_default, color_default);
         case 'F':
-            createbigchar(n, big_char_F);
-            return bc_printbigchar(n, x, y, color_default, color_default);
+            return bc_printbigchar(bigChars[15], x, y, color_default, color_default);
         default:
             return EXIT_FAILURE;
     }
@@ -362,9 +249,11 @@ int I_printoperations() {
     if (mt_gotoXY(7, 68)) return EXIT_FAILURE;
     printf(" Operation ");
     if (mt_gotoXY(I_POS_OPERATION_X, I_POS_OPERATION_Y)) return EXIT_FAILURE;
-    operations = instructionCounter | (cur_command << 8);
-    sc_commandDecode(operations, &cur_command, &instructionCounter);
-    printf("+%02X : %02X", cur_command, instructionCounter);
+    // operations = instructionCounter | (cur_command << 8);
+    // sc_commandDecode(operations, &cur_command, &instructionCounter);
+    int t1, t2;
+    if (sc_commandDecode(instructionCounter, &t1, &t2)) return EXIT_FAILURE;
+    printf("+%02X : %02X", t1, t2);
     return EXIT_SUCCESS;
 }
 
@@ -384,4 +273,154 @@ int I_printflags() {
     r |= sc_regGet(err_invalid_command, &c);
     c ? printf("C ") : printf(" ");
     return r;
+}
+
+int I_printcustomfields() {
+    // bc_box(23, 1, 25, 46) || bc_box(23, 47, 25, 84)
+    if (mt_gotoXY(23, 3)) return EXIT_FAILURE;
+    printf(" Input ");
+    if (mt_gotoXY(24, 2)) return EXIT_FAILURE;
+    printf(" > ");
+    if (mt_gotoXY(23, 49)) return EXIT_FAILURE;
+    printf(" Output ");
+    return EXIT_SUCCESS;
+}
+
+int I_printInputField(bool status, const char* format, ...) {
+    if (mt_gotoXY(24, 2)) return EXIT_FAILURE;
+    for (int i = 1; i < 45; ++i) printf(" ");
+    if (mt_gotoXY(24, 2)) return EXIT_FAILURE;
+    status ? printf(" \e[31m>\e[39m ") : printf(" > ");
+    if (format) {
+        va_list ap;
+        va_start(ap, format);
+        vprintf(format, ap);
+    }
+    return EXIT_SUCCESS;
+}
+
+int I_printOutputField(const char* format, ...) {
+    if (mt_gotoXY(24, 49)) return EXIT_FAILURE;
+    for (int i = 49; i < 84; ++i) printf(" ");
+    if (mt_gotoXY(24, 49)) return EXIT_FAILURE;
+    if (format) {
+        va_list ap;
+        va_start(ap, format);
+        vprintf(format, ap);
+    }
+    return EXIT_SUCCESS;
+}
+
+int I_executeOperation() {
+    int ret = 0;
+    int tmp;
+    if (sc_memoryGet(instructionCounter, &tmp)) return EXIT_FAILURE;
+    ret = CU(tmp);
+    return ret;
+}
+
+int I_setAccumulator() {
+    if (rk_mytermsave()) return EXIT_FAILURE;
+    if (rk_mytermregime(0, 0, 4, 1, 0)) return EXIT_FAILURE;
+    char bf[5] = {0};
+    I_printInputField(1, "Accumulator: ");
+    if (read(STDIN_FILENO, bf, 4) == -1) return EXIT_FAILURE;
+    if (rk_mytermrestore()) return EXIT_FAILURE;
+    I_printInputField(0, NULL);
+    long long c = xtoll(bf);
+    if (c > INT32_MAX || c < INT32_MIN) {
+        sc_regSet(err_out_of_range, 1);
+        return EXIT_SUCCESS;
+    }
+    if (!c && bf[0] != '0') {
+        return EXIT_FAILURE;
+    }
+    accumulator = (int)c;
+    I_printaccumulator();
+    return EXIT_FAILURE;
+}
+
+int I_setInstructionCounter(void) {
+    if (rk_mytermsave()) return EXIT_FAILURE;
+    if (rk_mytermregime(0, 0, 4, 1, 0)) return EXIT_FAILURE;
+    char bf[5] = {0};
+    I_printInputField(1, "InstructionCounter: ");
+    if (read(STDIN_FILENO, bf, 4) == -1) return EXIT_FAILURE;
+    if (rk_mytermrestore()) return EXIT_FAILURE;
+    I_printInputField(0, NULL);
+    long long c = xtoll(bf);
+    if (c > 0x63 || c < 0) {
+        sc_regSet(err_out_of_range, 1);
+        return EXIT_SUCCESS;
+    }
+    if (!c && bf[0] != '0') {
+        return EXIT_FAILURE;
+    }
+    I_move_address_xy(5);
+    instructionCounter = (int)c;
+    cur_x = instructionCounter / 10;
+    cur_y = instructionCounter % 10;
+    I_printinstructionCounter();
+    return EXIT_FAILURE;
+}
+
+long long xtoll(char* s) {
+    int i, sum = 0, k;
+    int p = (int)strlen(s) - 1;
+    for (i = 0; s[i] != '\0'; i++) {
+        switch (toupper(s[i])) {
+            case 'A':
+                k = 10;
+                break;
+            case 'B':
+                k = 11;
+                break;
+            case 'C':
+                k = 12;
+                break;
+            case 'D':
+                k = 13;
+                break;
+            case 'E':
+                k = 14;
+                break;
+            case 'F':
+                k = 15;
+                break;
+            case '1':
+                k = 1;
+                break;
+            case '2':
+                k = 2;
+                break;
+            case '3':
+                k = 3;
+                break;
+            case '4':
+                k = 4;
+                break;
+            case '5':
+                k = 5;
+                break;
+            case '6':
+                k = 6;
+                break;
+            case '7':
+                k = 7;
+                break;
+            case '8':
+                k = 8;
+                break;
+            case '9':
+                k = 9;
+                break;
+            case '0':
+                k = 0;
+                break;
+            default:
+                return 0;
+        }
+        sum += k * pow(16, p--);
+    }
+    return sum;
 }
