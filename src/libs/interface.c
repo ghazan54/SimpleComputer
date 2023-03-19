@@ -61,7 +61,9 @@ int I_startsc() {
         signal(SIGALRM, I_sigalarm);
         int rignore;
         if (sc_regGet(err_ignoring_clock_pulses, &rignore)) return EXIT_FAILURE;
-        if (I_scstep(rignore)) return EXIT_FAILURE;
+        if (rignore) {
+            if (I_scstep(rignore)) return EXIT_FAILURE;
+        }
     }
     return EXIT_SUCCESS;
 }
@@ -69,14 +71,14 @@ int I_startsc() {
 int I_scstep(int rignore) {
     if (I_printinstructionCounter()) return EXIT_FAILURE;
     if (I_printoperations()) return EXIT_FAILURE;
+    if (I_printflags()) return EXIT_FAILURE;
+    if (I_printbig(cur_x, cur_y)) return EXIT_FAILURE;
     if (mt_gotoXY(24, 5)) return EXIT_FAILURE;
-    enum keys key = 99;
     if (rignore) {
+        enum keys key = 99;
         rk_readkey(&key);
         rk_keyaction(key);
     }
-    I_printbig(cur_x, cur_y);
-    I_printflags();
     return EXIT_SUCCESS;
 }
 
