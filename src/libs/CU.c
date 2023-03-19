@@ -4,7 +4,6 @@
 #include <stdlib.h>
 #include <unistd.h>
 
-int operations = 0;
 int accumulator = 0;
 
 int CU(int operation) {
@@ -22,18 +21,15 @@ int CU(int operation) {
 }
 
 int cu_read(int operand) {
+    if (rk_mytermsave()) return EXIT_FAILURE;
     if (rk_mytermregime(0, 0, 4, 1, 0)) return EXIT_FAILURE;
     char bf[5] = {0};
     I_printInputField(1, "Read: ");
     if (read(STDIN_FILENO, bf, 4) == -1) return EXIT_FAILURE;
+    I_printInputField(0, NULL);
+    if (rk_mytermrestore()) return EXIT_FAILURE;
     long long c = xtoll(bf);
-    if (c > INT32_MAX || c < INT32_MIN) {
-        sc_regSet(err_out_of_range, 1);
-        return EXIT_SUCCESS;
-    }
-    if (!c && bf[0] != '0') {
-        return EXIT_FAILURE;
-    }
+    if (!c && bf[0] != '0') return EXIT_FAILURE;
     return sc_memorySet(operand, c);
 }
 

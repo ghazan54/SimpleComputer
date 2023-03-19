@@ -29,6 +29,10 @@ int sc_memorySet(int address, int value) {
         sc_regSet(err_out_of_range, 1);
         return EXIT_FAILURE;
     } else {
+        if (value > 0x3fff) {
+            sc_regSet(err_out_of_range, 1);
+            return EXIT_FAILURE;
+        }
         memory[address] = value;
         return EXIT_SUCCESS;
     }
