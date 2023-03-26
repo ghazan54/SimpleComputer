@@ -23,6 +23,8 @@ extern int cur_y;
 
 extern int lastsig;
 
+extern int startcu;
+
 int I_simplecomputer(void);
 int I_printall(void);
 int I_printhex(int x, int y, enum colors fg, enum colors bg);
@@ -34,7 +36,7 @@ int I_printinstructionCounter(void);
 int I_printoperations(void);
 int I_printflags(void);
 int I_startsc(void);
-int I_scstep(int rignore, bool startcu);
+int I_scstep(int rignore);
 int I_printcustomfields(void);
 int I_printInputField(bool status, const char* format, ...);
 int I_printOutputField(const char* format, ...);
