@@ -3,6 +3,7 @@
 #include <sc/interface.h>
 #include <sc/ram-operations.h>
 #include <stdint.h>
+#include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
 
@@ -92,5 +93,19 @@ int alu_mul(int operand) {
         accumulator = abs(accumulator);
         accumulator &= 0x3fff;
     }
+    return I_printaccumulator();
+}
+
+int alu_rcl(int operand) {
+    int val, v1, v2;
+    if (sc_memoryGet(operand, &val) || sc_commandDecode(val, &v1, &v2)) return EXIT_FAILURE;
+    char bf[5] = {0};
+    sprintf(bf, "%02X%02X", v1, v2);
+    val = xtoll(bf);
+    int msb = (val >> 13) & 1;
+    val <<= 1;
+    val |= msb;
+    val &= 0x3fff;
+    accumulator = val;
     return I_printaccumulator();
 }

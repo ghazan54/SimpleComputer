@@ -90,7 +90,8 @@ int I_scstep(int rignore) {
         CU();
         return I_ignoreimp();
     } else if (startcu == 1 || !rignore) {
-        return CU();
+        CU();
+        return I_move_address_xy(2);
     }
     return EXIT_SUCCESS;
 }

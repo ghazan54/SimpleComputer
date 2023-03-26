@@ -37,6 +37,8 @@ int CU() {
             return alu_divide(operand);
         case 0x33:
             return alu_mul(operand);
+        case 0x62:
+            return alu_rcl(operand);
         default:
             sc_regSet(err_invalid_command, 1);
             break;
