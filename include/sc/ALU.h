@@ -1,5 +1,7 @@
 #pragma once
 
+int ALU(int command, int operand);
+
 // Выполняет сложение слова в аккумуляторе и слова из указанной ячейки памяти
 // (результат в аккумуляторе)
 int alu_add(int operand);

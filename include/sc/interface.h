@@ -46,7 +46,7 @@ int I_setAccumulator(void);
 int I_setInstructionCounter(void);
 int I_runprogram(void);
 int I_restartsc(void);
-int xtoll(char* s);
+int I_stopprogram(void);
 
 //* sighandler
 
