@@ -25,6 +25,8 @@ int cur_y = 0;
 int startcu = false;
 int rig = false;
 
+int rignore = 1;
+
 const int bigChars[][2] = { { 0x8181817E, 0x7E818181 }, { 0x40485060, 0x40404040 }, { 0x2040423C, 0x7E040810 },
     { 0x7C40407C, 0x7C404040 }, { 0x7E424242, 0x40404040 }, { 0x7E02027E, 0x7E404040 },
     { 0x7E02027E, 0x7E424242 }, { 0x4040407E, 0x40404040 }, { 0x7E42427E, 0x7E424242 },
@@ -35,7 +37,7 @@ const int bigChars[][2] = { { 0x8181817E, 0x7E818181 }, { 0x40485060, 0x40404040
 int I_simplecomputer(void)
 {
     setvbuf(stdout, NULL, _IONBF, 0);
-    if (mt_clrscr() || sc_memoryInit() || sc_regInit() || sc_regSet(err_ignoring_clock_pulses, 1))
+    if (mt_clrscr() || sc_memoryInit() || sc_regInit())
         return EXIT_FAILURE;
     if (mt_gotoXY(1, 1))
         return EXIT_FAILURE;
@@ -68,9 +70,6 @@ int I_startsc()
         signal(SIGINT, I_stopsc);
         signal(SIGALRM, I_sigalarm);
         signal(SIGUSR1, I_sigusr1);
-        int rignore;
-        if (sc_regGet(err_ignoring_clock_pulses, &rignore))
-            return EXIT_FAILURE;
         if (rignore) {
             I_scstep(rignore);
         }
@@ -97,8 +96,8 @@ int I_scstep(int rignore)
     }
     if (startcu == 2) {
         CU();
-        return I_ignoreimp();
-    } else if (startcu == 1 || !rignore) {
+        return I_runprogram();
+    } else if (startcu == 1) {
         CU();
         return I_move_address_xy(2);
     }
@@ -434,6 +433,7 @@ int I_setAccumulator()
     I_printInputField(1, "Accumulator: ");
     int c1;
     scanf("%04X", &c1);
+    __fpurge(stdin);
     I_printInputField(0, NULL);
     if (c1 < 0)
         accumulator = ((-c1) & 0x3fff) | 0x4000;
@@ -448,6 +448,7 @@ int I_setInstructionCounter(void)
     I_printInputField(1, " InstructionCounter: ");
     int c;
     scanf("%04X", &c);
+    __fpurge(stdin);
     if (c > 0x63 || c < 0) {
         sc_regSet(err_out_of_range, 1);
         return EXIT_FAILURE;
@@ -462,88 +463,29 @@ int I_setInstructionCounter(void)
     return I_printinstructionCounter();
 }
 
-int xtoll(char* s)
-{
-    int i, sum = 0, k;
-    int p = (int)strlen(s) - 1;
-    for (i = 0; s[i] != '\0'; i++) {
-        switch (toupper(s[i])) {
-        case 'A':
-            k = 10;
-            break;
-        case 'B':
-            k = 11;
-            break;
-        case 'C':
-            k = 12;
-            break;
-        case 'D':
-            k = 13;
-            break;
-        case 'E':
-            k = 14;
-            break;
-        case 'F':
-            k = 15;
-            break;
-        case '1':
-            k = 1;
-            break;
-        case '2':
-            k = 2;
-            break;
-        case '3':
-            k = 3;
-            break;
-        case '4':
-            k = 4;
-            break;
-        case '5':
-            k = 5;
-            break;
-        case '6':
-            k = 6;
-            break;
-        case '7':
-            k = 7;
-            break;
-        case '8':
-            k = 8;
-            break;
-        case '9':
-            k = 9;
-            break;
-        case '0':
-            k = 0;
-            break;
-        default:
-            return 0;
-        }
-        sum += k * pow(16, p--);
-    }
-    return sum;
-}
-
-int I_ignoreimp()
+int I_runprogram()
 {
     struct itimerval nval, oval;
     nval.it_interval.tv_sec = 2;
     nval.it_interval.tv_usec = 100000;
     nval.it_value.tv_sec = 1;
     nval.it_value.tv_usec = 100000;
-    return setitimer(ITIMER_REAL, &nval, &oval) || sc_regSet(err_ignoring_clock_pulses, 0);
+    rignore = 0;
+    return setitimer(ITIMER_REAL, &nval, &oval);
 }
 
 int I_restartsc(void)
 {
-    if (sc_memoryFree() || sc_memoryInit() || sc_regInit() || sc_regSet(err_ignoring_clock_pulses, 1))
+    if (sc_memoryFree() || sc_memoryInit() || sc_regInit())
         return EXIT_FAILURE;
     struct itimerval nval, oval;
     nval.it_interval.tv_sec = 0;
     nval.it_interval.tv_usec = 0;
     nval.it_value.tv_sec = 0;
     nval.it_value.tv_usec = 0;
-    return setitimer(ITIMER_REAL, &nval, &oval) || I_printall() || sc_regInit() || sc_regSet(err_ignoring_clock_pulses, 1);
+    startcu = false;
+    rignore = 1;
+    return setitimer(ITIMER_REAL, &nval, &oval) || I_printall() || sc_regInit();
 }
 
 void I_sigusr1(int sig)

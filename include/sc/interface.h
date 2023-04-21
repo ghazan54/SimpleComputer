@@ -44,7 +44,7 @@ int I_move_address_xy(const int d);
 int I_executeOperation(void);
 int I_setAccumulator(void);
 int I_setInstructionCounter(void);
-int I_ignoreimp(void);
+int I_runprogram(void);
 int I_restartsc(void);
 int xtoll(char* s);
 

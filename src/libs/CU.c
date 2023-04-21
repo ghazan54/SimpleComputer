@@ -4,6 +4,7 @@
 #include <signal.h>
 #include <stdint.h>
 #include <stdio.h>
+#include <stdio_ext.h>
 #include <stdlib.h>
 #include <unistd.h>
 
@@ -17,14 +18,14 @@ int CU()
     if (sc_commandDecode(val, &command, &operand))
         return EXIT_FAILURE;
     switch (command) {
-    case 0x20:
+    case 0x10:
         return cu_read(operand);
-    case 0x22:
+    case 0x11:
         return cu_write(operand);
-    // case 0x20:
-    //     return cu_load(operand);
-    // case 0x21:
-    //     return cu_store(operand);
+    case 0x20:
+        return cu_load(operand);
+    case 0x21:
+        return cu_store(operand);
     case 0x40:
         return cu_jump(operand);
     case 0x41:
@@ -45,6 +46,7 @@ int CU()
         return alu_rcl(operand);
     default:
         sc_regSet(err_invalid_command, 1);
+        sc_regSet(err_ignoring_clock_pulses, 1);
         break;
     }
     return EXIT_FAILURE;
@@ -55,6 +57,7 @@ int cu_read(int operand)
     int c1, val;
     I_printInputField(1, " Read: ");
     scanf("%04X", &c1);
+    __fpurge(stdin);
     I_printInputField(0, NULL);
     I_printInputField(0, NULL);
     if (c1 < 0)
