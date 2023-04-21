@@ -86,7 +86,7 @@ int cu_jump(int operand) {
         sc_regSet(err_out_of_range, 1);
         return ERROR_CODE;
     } else {
-        instructionCounter = operand;
+        I_moveInstructionCounter(operand);
         return SUCCES_CODE;
     }
 }
@@ -95,8 +95,9 @@ int cu_jneg(int operand) {
     if (operand > 0x63 || operand < 0) {
         sc_regSet(err_out_of_range, 1);
         return ERROR_CODE;
-    } else if (accumulator < 0) {
-        instructionCounter = operand;
+    } else if (accumulator & 0x4000) {
+        I_moveInstructionCounter(operand);
+        CU();
         return SUCCES_CODE;
     }
     return ERROR_CODE;
@@ -107,7 +108,7 @@ int cu_jz(int operand) {
         sc_regSet(err_out_of_range, 1);
         return ERROR_CODE;
     } else if (!accumulator) {
-        instructionCounter = operand;
+        I_moveInstructionCounter(operand);
         return SUCCES_CODE;
     }
     return ERROR_CODE;

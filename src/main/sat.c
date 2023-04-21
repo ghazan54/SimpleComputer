@@ -70,7 +70,7 @@ int sat(const char* filepath) {
 
         tok = strtok(NULL, " ");  //* get operand
         char* tok_tmp = *tok == '+' || *tok == '-' ? tok + 1 : tok;
-        int operand = xtoi(tok_tmp);
+        int operand = atoi(tok_tmp);
         if (!operand && (strcmp(tok_tmp, "00") && strcmp(tok_tmp, "0000"))) {
             fprintf(stderr, "sat:%d\e[31m fatal error:\e[39m %s: Invalid operand\n", count_strs, tok);
             return ERROR_CODE;
@@ -95,6 +95,7 @@ int sat(const char* filepath) {
             }
         }
         ++count_strs;
+        printf("%X\n", i);
     }
     fclose(file);
 

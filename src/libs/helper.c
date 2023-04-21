@@ -68,6 +68,17 @@ int xtoi(char* s) {
     return sum;
 }
 
+int iatox(int x) {
+    int result = 0, power = 1;
+    while (x != 0) {
+        int digit = x % 16;
+        result += digit * power;
+        power *= 10;
+        x /= 16;
+    }
+    return result;
+}
+
 int atox(char* s) {
     int n = atoi(s);
     int hex = 0;

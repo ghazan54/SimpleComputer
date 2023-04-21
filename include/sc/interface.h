@@ -20,6 +20,7 @@
 
 extern int cur_x;
 extern int cur_y;
+extern int nextInstruction;
 
 extern int lastsig;
 
@@ -47,6 +48,7 @@ int I_setInstructionCounter(void);
 int I_runprogram(void);
 int I_restartsc(void);
 int I_stopprogram(void);
+int I_moveInstructionCounter(int ic);
 
 //* sighandler
 

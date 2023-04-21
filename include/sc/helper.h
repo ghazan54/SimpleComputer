@@ -5,4 +5,5 @@
 
 int xtoi(char* s);
 int atox(char* s);
+int iatox(int x);
 int sc_print(const char* format, ...);

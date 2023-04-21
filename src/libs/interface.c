@@ -17,6 +17,7 @@ static int base_x = 2;
 static int base_y = 2;
 
 int instructionCounter = 0;
+int nextInstruction = -1;
 
 int lastsig = -1;
 
@@ -27,6 +28,7 @@ int startcu = false;
 int rig = false;
 
 int rignore = 1;
+int outpitLine = 0;
 
 static bool halt_ex = false;
 
@@ -42,8 +44,8 @@ int I_simplecomputer(void) {
     if (mt_clrscr() || sc_memoryInit() || sc_regInit()) return ERROR_CODE;
     if (mt_gotoXY(1, 1)) return ERROR_CODE;
     if (bc_box(1, 1, 12, 62) || bc_box(1, 63, 3, 84) || bc_box(4, 63, 6, 84) || bc_box(7, 63, 9, 84) ||
-        bc_box(10, 63, 12, 84) || bc_box(13, 1, 22, 46) || bc_box(13, 47, 22, 84) || bc_box(23, 1, 25, 46) ||
-        bc_box(23, 47, 25, 84))
+        bc_box(10, 63, 12, 84) || bc_box(13, 1, 22, 46) || bc_box(13, 47, 22, 84) || bc_box(23, 1, 33, 46) ||
+        bc_box(23, 47, 33, 84))
         return ERROR_CODE;
     I_printall();
     I_startsc();
@@ -53,7 +55,7 @@ int I_simplecomputer(void) {
 void I_stopsc(int sig) {
     lastsig = sig;
     sc_memoryFree();
-    mt_gotoXY(26, 0);
+    mt_gotoXY(31, 0);
     exit(SUCCES_CODE);
 }
 
@@ -65,7 +67,6 @@ void I_sigalarm(int sig) {
 
 int I_startsc() {
     startcu = false;
-
     while (1) {
         signal(SIGINT, I_stopsc);
         signal(SIGALRM, I_sigalarm);
@@ -349,13 +350,15 @@ int I_printInputField(bool status, const char* format, ...) {
 }
 
 int I_printOutputField(const char* format, ...) {
-    if (mt_gotoXY(24, 49)) return ERROR_CODE;
+    if (outpitLine > 8) outpitLine = 0;
+    if (mt_gotoXY(24 + outpitLine, 49)) return ERROR_CODE;
     for (int i = 49; i < 84; ++i) sc_print(" ");
-    if (mt_gotoXY(24, 49)) return ERROR_CODE;
+    if (mt_gotoXY(24 + outpitLine, 49)) return ERROR_CODE;
     if (format) {
         va_list ap;
         va_start(ap, format);
         vprintf(format, ap);
+        ++outpitLine;
     }
     return SUCCES_CODE;
 }
@@ -430,4 +433,20 @@ int I_stopprogram(void) {
     halt_ex = true;
     alarm(0);
     return setitimer(ITIMER_REAL, &nval, &oval);
+}
+
+int I_moveInstructionCounter(int ic) {
+    I_printInputField(1, " InstructionCounter: ");
+    int c = ic;
+    if (c > 0x63 || c < 0) {
+        sc_regSet(err_out_of_range, 1);
+        return ERROR_CODE;
+    }
+    if (I_printhex(cur_x, cur_y, color_default, color_default)) return ERROR_CODE;
+    instructionCounter = c;
+    cur_x = instructionCounter / 10;
+    cur_y = instructionCounter % 10;
+    I_move_address_xy(5);
+    I_printInputField(0, NULL);
+    return I_printinstructionCounter();
 }
