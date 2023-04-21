@@ -6,12 +6,6 @@
 
 static int* memory = NULL;
 static int memory_flags;
-static int memory_operations_id[DEFAULT_COUNT_MEMORY_OPERATIONS] = {
-    0x10, 0x11,              // i/o
-    0x20, 0x21,              // loading/unloading
-    0x30, 0x31, 0x32, 0x33,  // arithmetic
-    0x40, 0x41, 0x42, 0x43,  // control transfer
-    0x62};                   // custom
 
 int sc_memoryInit(void) {
     memory = (int*)calloc(DEFAULT_MEMORY_INIT, sizeof(int));
@@ -90,11 +84,7 @@ int sc_regGet(int registr, int* value) {
 int cmpint_bs(const void* a, const void* b) { return (*(int*)a - *(int*)b); }
 
 int sc_commandEncode(int command, int operand, int* value) {
-    if (!bsearch(&command, memory_operations_id, DEFAULT_COUNT_MEMORY_OPERATIONS, sizeof(int), cmpint_bs)) {
-        return ERROR_CODE;
-    } else {
-        *value = 0;
-    }
+    *value = 0;
     *value |= command << DEFAULT_BLOCK_ENCODE_BITS;
     *value |= operand;
     return SUCCES_CODE;

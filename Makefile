@@ -37,11 +37,11 @@ MODULE_4 = keys
 MODULE_6 = CU
 MODULE_7 = ALU
 
-MODULES_LINK = $(LIB_DIR)/$(MODULE_0_LIB).a $(LIB_DIR)/$(MODULE_1_LIB).a $(LIB_DIR)/$(MODULE_2_LIB).a $(LIB_DIR)/$(MODULE_3_LIB).a $(LIB_DIR)/$(MODULE_4_LIB).a $(LIB_DIR)/$(MODULE_6_LIB).a $(LIB_DIR)/$(MODULE_7_LIB).a $(SRC_LIBS)/helper.c
+MODULES_LINK = $(SRC_LIBS)/helper.c $(LIB_DIR)/$(MODULE_0_LIB).a $(LIB_DIR)/$(MODULE_1_LIB).a $(LIB_DIR)/$(MODULE_2_LIB).a $(LIB_DIR)/$(MODULE_3_LIB).a $(LIB_DIR)/$(MODULE_4_LIB).a $(LIB_DIR)/$(MODULE_6_LIB).a $(LIB_DIR)/$(MODULE_7_LIB).a
 
 .PHONY: all
 
-all: create_dirs $(APP_PATH)
+all: create_dirs $(APP_PATH) sat
 
 create_dirs: create_bin create_obj create_libs
 
@@ -98,6 +98,9 @@ $(OBJ_DIR)/$(MODULE_6).o : $(SRC_LIBS)/$(MODULE_6).c
 
 $(OBJ_DIR)/$(MODULE_7).o : $(SRC_LIBS)/$(MODULE_7).c
 	$(CC) -c $(CFLAGS) $(CPPFLAGS) $^ -o $@
+
+sat: $(SRC_LIBS)/helper.c $(MAIN_PATH)/sat.c $(LIB_DIR)/$(MODULE_1_LIB).a
+	$(CC) $(CFLAGS) $(CPPFLAGS) $^ -o bin/$@ $(LDFLAGS) $(LDLIBS)
 
 run:
 	$(APP_PATH)

@@ -3,10 +3,11 @@
 #include <sc/helper.h>
 #include <stdarg.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
 
-int xtoll(char* s) {
+int xtoi(char* s) {
     int i, sum = 0, k;
     int p = (int)strlen(s) - 1;
     for (i = 0; s[i] != '\0'; i++) {
@@ -65,6 +66,19 @@ int xtoll(char* s) {
         sum += k * pow(16, p--);
     }
     return sum;
+}
+
+int atox(char* s) {
+    int n = atoi(s);
+    int hex = 0;
+    int base = 1;
+    while (n != 0) {
+        int r = n % 16;
+        hex += r * base;
+        base *= 16;
+        n /= 16;
+    }
+    return hex;
 }
 
 int sc_print(const char* format, ...) {

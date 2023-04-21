@@ -125,7 +125,7 @@ int alu_rcl(int operand) {
     if (sc_memoryGet(operand, &val) || sc_commandDecode(val, &v1, &v2)) return ERROR_CODE;
     char bf[5] = {0};
     sprintf(bf, "%02X%02X", v1, v2);
-    val = xtoll(bf);
+    val = xtoi(bf);
     int msb = (val >> 13) & 1;
     val <<= 1;
     val |= msb;
