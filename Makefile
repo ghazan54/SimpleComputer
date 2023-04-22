@@ -43,7 +43,7 @@ MODULES_LINK = $(LIB_DIR)/$(MODULE_0_LIB).a $(LIB_DIR)/$(MODULE_1_LIB).a $(LIB_D
 
 .PHONY: all
 
-all: create_dirs $(APP_PATH) sat
+all: create_dirs $(APP_PATH) sat sbt
 
 create_dirs: create_bin create_obj create_libs
 
@@ -107,8 +107,15 @@ $(OBJ_DIR)/$(MODULE_7).o : $(SRC_LIBS)/$(MODULE_7).c
 $(OBJ_DIR)/$(MODULE_8).o : $(SRC_LIBS)/$(MODULE_8).c
 	$(CC) -c $(CFLAGS) $(CPPFLAGS) $^ -o $@
 
-sat: $(SRC_LIBS)/helper.c $(MAIN_PATH)/sat.c $(LIB_DIR)/$(MODULE_1_LIB).a
-	$(CC) $(CFLAGS) $(CPPFLAGS) $^ -o bin/$@ $(LDFLAGS) $(LDLIBS)
+sat: create_dirs $(BIN_DIR)/sat
+
+$(BIN_DIR)/sat: $(SRC_LIBS)/helper.c $(MAIN_PATH)/sat.c $(LIB_DIR)/$(MODULE_1_LIB).a
+	$(CC) $(CFLAGS) $(CPPFLAGS) $^ -o $@ $(LDFLAGS) $(LDLIBS)
+
+sbt: create_dirs $(BIN_DIR)/sbt
+
+$(BIN_DIR)/sbt: $(SRC_LIBS)/helper.c $(MAIN_PATH)/sbt.c
+	$(CC) $(CFLAGS) $(CPPFLAGS) $^ -o $@ $(LDFLAGS) $(LDLIBS)
 
 run:
 	$(APP_PATH)
@@ -126,16 +133,16 @@ test: create_dirs $(BIN_DIR)/test_$(MODULE_1).out $(BIN_DIR)/test_$(MODULE_2).ou
 # $(TEST_PATH) : $(SRC_TEST)/main.c $(SRC_TEST)/$(TEST_NAME).c $(LIB_DIR)/$(MODULE_1_LIB).a $(LIB_DIR)/$(MODULE_2_LIB).a
 # 	$(CC) $(CFLAGS) $(CPPFLAGS) $(TESTFLAGS) $^ -o $@ $(LDFLAGS) $(LDLIBS)
 
-$(BIN_DIR)/test_$(MODULE_1).out: $(SRC_TEST)/test.c $(SRC_TEST)/test_$(MODULE_1).c $(LIB_DIR)/$(MODULE_1_LIB).a
+$(BIN_DIR)/test_$(MODULE_1).out: $(SRC_TEST)/test.c $(SRC_TEST)/test_$(MODULE_1).c $(LIB_DIR)/$(MODULE_1_LIB).a $(LIB_DIR)/$(MODULE_8_LIB).a
 	$(CC) $(CFLAGS) $(CPPFLAGS) $(TESTFLAGS) $^ -o $@ $(LDFLAGS) $(LDLIBS)
 
-$(BIN_DIR)/test_$(MODULE_2).out: $(SRC_TEST)/test.c $(SRC_TEST)/test_$(MODULE_2).c $(LIB_DIR)/$(MODULE_2_LIB).a
+$(BIN_DIR)/test_$(MODULE_2).out: $(SRC_TEST)/test.c $(SRC_TEST)/test_$(MODULE_2).c $(LIB_DIR)/$(MODULE_2_LIB).a $(LIB_DIR)/$(MODULE_8_LIB).a
 	$(CC) $(CFLAGS) $(CPPFLAGS) $(TESTFLAGS) $^ -o $@ $(LDFLAGS) $(LDLIBS)
 
-$(BIN_DIR)/test_$(MODULE_3).out: $(SRC_TEST)/test.c $(SRC_TEST)/test_$(MODULE_3).c $(LIB_DIR)/$(MODULE_3_LIB).a $(LIB_DIR)/$(MODULE_2_LIB).a
+$(BIN_DIR)/test_$(MODULE_3).out: $(SRC_TEST)/test.c $(SRC_TEST)/test_$(MODULE_3).c $(LIB_DIR)/$(MODULE_3_LIB).a $(LIB_DIR)/$(MODULE_2_LIB).a $(LIB_DIR)/$(MODULE_8_LIB).a
 	$(CC) $(CFLAGS) $(CPPFLAGS) $(TESTFLAGS) $^ -o $@ $(LDFLAGS) $(LDLIBS)
 
-$(BIN_DIR)/test_$(MODULE_4).out: $(SRC_TEST)/test.c $(SRC_TEST)/test_$(MODULE_4).c $(LIB_DIR)/$(MODULE_4_LIB).a $(LIB_DIR)/$(MODULE_0_LIB).a $(LIB_DIR)/$(MODULE_1_LIB).a $(LIB_DIR)/$(MODULE_2_LIB).a $(LIB_DIR)/$(MODULE_3_LIB).a $(LIB_DIR)/$(MODULE_6_LIB).a
+$(BIN_DIR)/test_$(MODULE_4).out: $(SRC_TEST)/test.c $(SRC_TEST)/test_$(MODULE_4).c $(LIB_DIR)/$(MODULE_4_LIB).a $(LIB_DIR)/$(MODULE_0_LIB).a $(LIB_DIR)/$(MODULE_1_LIB).a $(LIB_DIR)/$(MODULE_2_LIB).a $(LIB_DIR)/$(MODULE_3_LIB).a $(LIB_DIR)/$(MODULE_6_LIB).a $(LIB_DIR)/$(MODULE_8_LIB).a $(LIB_DIR)/$(MODULE_7_LIB).a
 	$(CC) $(CFLAGS) $(CPPFLAGS) $(TESTFLAGS) $^ -o $@ $(LDFLAGS) $(LDLIBS)
 
 $(BIN_DIR)/test_signals.out: $(SRC_TEST)/test.c $(SRC_TEST)/test_signals.c $(MODULES_LINK)

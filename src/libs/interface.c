@@ -397,9 +397,9 @@ int I_setInstructionCounter(void) {
 
 int I_runprogram() {
     struct itimerval nval, oval;
-    nval.it_interval.tv_sec = 2;
+    nval.it_interval.tv_sec = 0;
     nval.it_interval.tv_usec = 100000;
-    nval.it_value.tv_sec = 1;
+    nval.it_value.tv_sec = 0;
     nval.it_value.tv_usec = 100000;
     rignore = 0;
     return setitimer(ITIMER_REAL, &nval, &oval);
@@ -414,6 +414,7 @@ int I_restartsc(void) {
     nval.it_value.tv_usec = 0;
     startcu = false;
     rignore = 1;
+    I_moveInstructionCounter(0);
     return setitimer(ITIMER_REAL, &nval, &oval) || I_printall() || sc_regInit();
 }
 
@@ -431,7 +432,7 @@ int I_stopprogram(void) {
     startcu = false;
     rignore = 1;
     halt_ex = true;
-    alarm(0);
+    // alarm(0);
     return setitimer(ITIMER_REAL, &nval, &oval);
 }
 
