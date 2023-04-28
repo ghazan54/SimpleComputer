@@ -71,45 +71,69 @@ int var_getaddress(variables* vars, char* name) {
 
 #pragma endregion  // abstract_syntax_tree
 
-#pragma region stack
+#pragma region static_stack
 
 #define STACK_SIZE 100
 
-typedef struct {
-    char* stack;
+typedef struct static_stack {
+    char* data;
     int top;
-} stack;
+} static_stack;
 
 typedef struct simple_basic_string {
-    stack* root;
+    static_stack* root;
     variables* var;
     char* operation;
     int n;
 } sbstring;
 
-stack* create_stack() {
-    stack* s = (stack*)malloc(sizeof(*s));
+static_stack* create_stack() {
+    static_stack* s = (static_stack*)malloc(sizeof(*s));
     if (s) {
         s->top = -1;
-        s->stack = (char*)calloc(STACK_SIZE, 1);
+        s->data = (char*)calloc(STACK_SIZE, 1);
     }
     return s;
 }
 
-void push(stack* s, char val) {
+void static_stack_push(static_stack* s, char val) {
     if (s->top >= STACK_SIZE - 1) {
         fprintf(stderr, "sbt:\e[31m fatal error:\e[39m: Stack overflow\n");
         exit(EXIT_FAILURE);
     }
-    s->stack[++(s->top)] = val;
+    s->data[++(s->top)] = val;
 }
 
-char pop(stack* s) {
+char static_stack_pop(static_stack* s) {
     if (s->top < 0) {
         fprintf(stderr, "sbt:\e[31m fatal error:\e[39m: Stack underflow\n");
         exit(EXIT_FAILURE);
     }
-    return s->stack[s->top--];
+    return s->data[s->top--];
+}
+
+typedef struct dynamic_stack {
+    char* data;
+    struct dynamic_stack* next;
+} stack;
+
+void push(stack** top, char* x) {
+    stack* temp = (stack*)malloc(sizeof(*temp));
+    temp->data = strdup(x);
+    temp->next = *top;
+    *top = temp;
+}
+
+char* pop(stack** top) {
+    if (*top == NULL) {
+        printf("Stack is empty.\n");
+        return NULL;
+    }
+    stack* temp = *top;
+    char* ret = (*top)->data;
+    *top = (*top)->next;
+    free(temp);
+    return ret;
 }
 
 int is_operator(char c) { return c == '+' || c == '-' || c == '*' || c == '/'; }
@@ -127,7 +151,7 @@ int precedence(char op) {
     }
 }
 
-char* to_postfix(char* expr, stack* s) {
+char* to_postfix(char* expr, static_stack* s) {
     char* postfix = (char*)malloc(strlen(expr) + 1);
     char* p = postfix;
     for (char* q = expr; *q; q++) {
@@ -141,12 +165,12 @@ char* to_postfix(char* expr, stack* s) {
             *p++ = ' ';
             --q;
         } else if (is_operator(*q)) {
-            while (s->top >= 0 && is_operator(s->stack[s->top]) &&
-                   precedence(s->stack[s->top]) >= precedence(*q)) {
-                *p++ = pop(s);
+            while (s->top >= 0 && is_operator(s->data[s->top]) &&
+                   precedence(s->data[s->top]) >= precedence(*q)) {
+                *p++ = static_stack_pop(s);
                 *p++ = ' ';
             }
-            push(s, *q);
+            static_stack_push(s, *q);
         } else {
             *p++ = *q;
             while (*(q + 1) && !isspace(*(q + 1)) && !is_operator(*(q + 1))) {
@@ -156,7 +180,7 @@ char* to_postfix(char* expr, stack* s) {
         }
     }
     while (s->top >= 0) {
-        *p++ = pop(s);
+        *p++ = static_stack_pop(s);
         *p++ = ' ';
     }
     *p = '\0';
@@ -266,7 +290,7 @@ int build_stack(char* s, sbstring* str, variables* vars, int* vars_size) {
     return SUCCES_CODE;
 }
 
-#pragma endregion  // stack
+#pragma endregion  // static_stack
 
 typedef struct simple_assembler_instruction {
     char instruction[8];
@@ -341,50 +365,77 @@ int to_sa(char* str, variables* vars, int* vars_size, sbinstruction* si, int* in
                 fprintf(stderr, "sbt:\e[31m fatal error:\e[39m: Undeclared variable: %s\n", tok);
                 return ERROR_CODE;
             }
-            strcpy(si[*instructionSize].instruction, "LOAD");
-            si[*instructionSize].n = instructionCounter++;
-            si[*instructionSize].operand = addr_start;
-            *instructionSize += 1;
-            char* lname = tok;
+
+            stack* stck = NULL;
+            push(&stck, tok);
+            bool load = false;
             while ((tok = strtok(NULL, " "))) {
+                if (!load && (!strcmp(tok, "+") || !strcmp(tok, "-") || !strcmp(tok, "*") ||
+                              !strcmp(tok, "/"))) {  //? load in accumulator
+                    load = true;
+                    char* b = pop(&stck);
+                    char* a = pop(&stck);
+                    addr_start = var_getaddress(vars, a);
+                    strcpy(si[*instructionSize].instruction, "LOAD");
+                    si[*instructionSize].n = instructionCounter++;
+                    si[*instructionSize].operand = addr_start;
+                    *instructionSize += 1;
+                    push(&stck, b);
+                    push(&stck, a);
+                    free(a);
+                    free(b);
+                }
                 if (!strcmp(tok, "+")) {
-                    if ((addr_start = var_getaddress(vars, lname)) == -1) {
-                        fprintf(stderr, "sbt:\e[31m fatal error:\e[39m: Undeclared variable: %s\n", tok);
-                        return ERROR_CODE;
-                    }
+                    char* b = pop(&stck);
+                    char* a = pop(&stck);
+                    addr_start = var_getaddress(vars, a);
                     strcpy(si[*instructionSize].instruction, "ADD");
                     si[*instructionSize].n = instructionCounter++;
                     si[*instructionSize].operand = addr_start;
                     *instructionSize += 1;
+                    push(&stck, name);
+                    free(a);
+                    free(b);
                 } else if (!strcmp(tok, "-")) {
-                    if ((addr_start = var_getaddress(vars, lname)) == -1) {
-                        fprintf(stderr, "sbt:\e[31m fatal error:\e[39m: Undeclared variable: %s\n", tok);
-                        return ERROR_CODE;
-                    }
+                    char* b = pop(&stck);
+                    char* a = pop(&stck);
+                    addr_start = var_getaddress(vars, a);
                     strcpy(si[*instructionSize].instruction, "SUB");
                     si[*instructionSize].n = instructionCounter++;
                     si[*instructionSize].operand = addr_start;
                     *instructionSize += 1;
+                    push(&stck, name);
+                    free(a);
+                    free(b);
                 } else if (!strcmp(tok, "*")) {
-                    if ((addr_start = var_getaddress(vars, lname)) == -1) {
-                        fprintf(stderr, "sbt:\e[31m fatal error:\e[39m: Undeclared variable: %s\n", tok);
-                        return ERROR_CODE;
-                    }
+                    char* b = pop(&stck);
+                    char* a = pop(&stck);
+                    addr_start = var_getaddress(vars, a);
                     strcpy(si[*instructionSize].instruction, "MUL");
                     si[*instructionSize].n = instructionCounter++;
                     si[*instructionSize].operand = addr_start;
                     *instructionSize += 1;
+                    push(&stck, name);
+                    free(a);
+                    free(b);
                 } else if (!strcmp(tok, "/")) {
-                    if ((addr_start = var_getaddress(vars, lname)) == -1) {
-                        fprintf(stderr, "sbt:\e[31m fatal error:\e[39m: Undeclared variable: %s\n", tok);
-                        return ERROR_CODE;
-                    }
+                    char* b = pop(&stck);
+                    char* a = pop(&stck);
+                    addr_start = var_getaddress(vars, a);
                     strcpy(si[*instructionSize].instruction, "DIVIDE");
                     si[*instructionSize].n = instructionCounter++;
                     si[*instructionSize].operand = addr_start;
                     *instructionSize += 1;
+                    push(&stck, name);
+                    free(a);
+                    free(b);
                 } else {
-                    lname = tok;
+                    if ((addr_start = var_getaddress(vars, tok)) == -1) {
+                        fprintf(stderr, "sbt:\e[31m fatal error:\e[39m: Undeclared variable: %s\n", tok);
+                        return ERROR_CODE;
+                    } else {
+                        push(&stck, tok);
+                    }
                 }
             }
             strcpy(si[*instructionSize].instruction, "STORE");
@@ -428,7 +479,7 @@ int sbt(const char* filepath, const char* result) {
         }
 
         tok = strtok(NULL, "\n");  //* get full line
-        strs[i].root->stack = to_postfix(tok, strs[i].root);
+        strs[i].root->data = to_postfix(tok, strs[i].root);
         tok = strtok(tok, " ");  //* get instruction
         if (build_stack(tok, &strs[i], var, &var_size)) {
             fprintf(stderr, "error line: %d\nexit code: 1\n", i);
@@ -439,7 +490,7 @@ int sbt(const char* filepath, const char* result) {
     sbinstruction si[100];
     int instructionSize = 0;
     for (int i = 0; strs[i].root; ++i) {
-        to_sa(strs[i].root->stack, var, &var_size, si, &instructionSize);
+        to_sa(strs[i].root->data, var, &var_size, si, &instructionSize);
     }
 
     FILE* file_sa = fopen(result, "w");
@@ -450,11 +501,11 @@ int sbt(const char* filepath, const char* result) {
     fclose(file_sa);
 
     // for (int i = 0; strs[i].root; ++i) {
-    //     printf("%s\n", strs[i].root->stack);
+    //     printf("%s\n", strs[i].root->data);
     // }
 
     for (int i = 0; strs[i].root; ++i) {
-        free(strs[i].root->stack);
+        free(strs[i].root->data);
         free(strs[i].root);
     }
 
