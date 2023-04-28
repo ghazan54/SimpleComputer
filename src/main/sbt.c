@@ -69,111 +69,6 @@ int var_getaddress(variables* vars, char* name) {
     return -1;
 }
 
-int ast_postorder(ast_t* root, variables* vars, int vars_size, FILE* file, int* cur_str) {
-    if (!root) return ERROR_CODE;
-    if (root->left) ast_postorder(root->left, vars, vars_size, file, cur_str);
-    if (root->right) ast_postorder(root->right, vars, vars_size, file, cur_str);
-    if (root->node_type == OPERAND) {
-        return SUCCES_CODE;
-    } else if (root->node_type == OPERATOR) {
-        if (!strcmp(root->data, "+")) {
-            if (!root->left || !root->right) {
-                fprintf(stderr, "sbt:\e[31m fatal error:\e[39m +: Missing operand: lval=%p rval=%p\n",
-                        root->left, root->right);
-                return ERROR_CODE;
-            }
-            if (root->left->node_type == OPERAND && root->right->node_type == OPERAND) {
-                int adr1 = var_getaddress(vars, root->left->data);
-                if (adr1 == -1) {
-                    fprintf(stderr,
-                            "sbt:\e[31m fatal error:\e[39m +: A variable named '%s' was not declared\n",
-                            root->left->data);
-                    return ERROR_CODE;
-                }
-                fprintf(file, "%02d LOAD %02d\n", *cur_str, adr1);
-                *cur_str += 1;
-                int adr2 = var_getaddress(vars, root->right->data);
-                if (adr2 == -1) {
-                    fprintf(stderr,
-                            "sbt:\e[31m fatal error:\e[39m +: A variable named '%s' was not declared\n",
-                            root->right->data);
-                    return ERROR_CODE;
-                }
-                fprintf(file, "%02d ADD %02d\n", *cur_str, adr2);
-                *cur_str += 1;
-                fprintf(file, "%02d STORE %02d\n", *cur_str, adr1);
-                *cur_str += 1;
-            } else {
-                fprintf(file, "the end +.\n");
-                exit(-1);
-            }
-        } else if (!strcmp(root->data, "-")) {
-            if (!root->left || !root->right) {
-                fprintf(stderr, "sbt:\e[31m fatal error:\e[39m -: Missing operand: lval=%p rval=%p\n",
-                        root->left, root->right);
-                return ERROR_CODE;
-            }
-            if (root->left->node_type == OPERAND && root->right->node_type == OPERAND) {
-                int adr1 = var_getaddress(vars, root->left->data);
-                if (adr1 == -1) {
-                    fprintf(stderr,
-                            "sbt:\e[31m fatal error:\e[39m -: A variable named '%s' was not declared\n",
-                            root->left->data);
-                    return ERROR_CODE;
-                }
-                fprintf(file, "%02d LOAD %02d\n", *cur_str, adr1);
-                *cur_str += 1;
-                int adr2 = var_getaddress(vars, root->right->data);
-                if (adr2 == -1) {
-                    fprintf(stderr,
-                            "sbt:\e[31m fatal error:\e[39m -: A variable named '%s' was not declared\n",
-                            root->right->data);
-                    return ERROR_CODE;
-                }
-                fprintf(file, "%02d SUB %02d\n", *cur_str, adr2);
-                *cur_str += 1;
-            } else {
-                fprintf(file, "the end -.\n");
-                exit(-1);
-            }
-        } else {
-            fprintf(stderr, "sbt:\e[31m fatal error:\e[39m: Invalid operation '%s'\n", root->data);
-            return ERROR_CODE;
-        }
-    } else {
-        if (!strcmp(root->data, "REM")) {
-            return SUCCES_CODE;
-        } else if (!strcmp(root->data, "INPUT")) {
-            int adr = var_getaddress(vars, root->right->data);
-            if (adr == -1) {
-                fprintf(stderr, "sbt:\e[31m fatal error:\e[39m %s: A variable named '%s' was not declared\n",
-                        root->data, root->right->data);
-                return ERROR_CODE;
-            }
-            fprintf(file, "%02d READ %02d\n", *cur_str, adr);
-            *cur_str += 1;
-        } else if (!strcmp(root->data, "PRINT")) {
-            int adr = var_getaddress(vars, root->right->data);
-            if (adr == -1) {
-                fprintf(stderr, "sbt:\e[31m fatal error:\e[39m %s: A variable named '%s' was not declared\n",
-                        root->data, root->right->data);
-                return ERROR_CODE;
-            }
-            fprintf(file, "%02d WRITE %02d\n", *cur_str, adr);
-            *cur_str += 1;
-        } else if (!strcmp(root->data, "GOTO")) {
-        } else if (!strcmp(root->data, "IF")) {
-        } else if (!strcmp(root->data, "LET")) {
-        } else if (!strcmp(root->data, "END")) {
-            fprintf(file, "%02d HALT 00\n", *cur_str);
-            *cur_str += 1;
-        } else {
-        }
-    }
-
-    return SUCCES_CODE;
-}
-
 #pragma endregion  // abstract_syntax_tree
 
 #pragma region stack
@@ -331,7 +226,7 @@ int build_stack(char* s, sbstring* str, variables* vars, int* vars_size) {
                     s);
             return ERROR_CODE;
         }
-        build_stack(tok, str, vars, vars_size);
+        if (build_stack(tok, str, vars, vars_size) == ERROR_CODE) return ERROR_CODE;
     } else if (!strcmp(s, "LET")) {
         char* tok = strtok(NULL, " ");
         if (!tok) {
@@ -373,6 +268,137 @@ int build_stack(char* s, sbstring* str, variables* vars, int* vars_size) {
 
 #pragma endregion  // stack
 
+typedef struct simple_assembler_instruction {
+    char instruction[8];
+    int n;
+    int operand;
+} sbinstruction;
+
+int to_sa(char* str, variables* vars, int* vars_size, sbinstruction* si, int* instructionSize) {
+    static int instructionCounter = 1;
+
+    char bf[BUFSIZ];
+    strcpy(bf, str);
+
+    char* tok = strtok(bf, " ");
+    if (!strcmp(tok, "REM")) {
+        fprintf(stderr, "sbt:\e[38;5;206m warning\e[39m: Comments ignored\n");
+    } else if (!strcmp(tok, "INPUT")) {
+        strcpy(si[*instructionSize].instruction, "READ");
+        tok = strtok(NULL, " ");
+        int addr;
+        if ((addr = var_getaddress(vars, tok)) == -1) {
+            fprintf(stderr, "sbt:\e[31m fatal error:\e[39m: Undeclared variable: %s\n", tok);
+            return ERROR_CODE;
+        }
+        si[*instructionSize].n = instructionCounter++;
+        si[*instructionSize].operand = addr;
+        *instructionSize += 1;
+    } else if (!strcmp(tok, "PRINT")) {
+        strcpy(si[*instructionSize].instruction, "WRITE");
+        tok = strtok(NULL, " ");
+        int addr;
+        if ((addr = var_getaddress(vars, tok)) == -1) {
+            fprintf(stderr, "sbt:\e[31m fatal error:\e[39m: Undeclared variable: %s\n", tok);
+            return ERROR_CODE;
+        }
+        si[*instructionSize].n = instructionCounter++;
+        si[*instructionSize].operand = addr;
+        *instructionSize += 1;
+    } else if (!strcmp(tok, "GOTO")) {
+        strcpy(si[*instructionSize].instruction, "JUMP");
+        tok = strtok(NULL, " ");
+        int addr = atoi(tok);
+        if (!addr && *tok != '0') {
+            fprintf(stderr, "sbt:\e[31m fatal error:\e[39m: Invalid address: %s\n", tok);
+            return ERROR_CODE;
+        }
+        si[*instructionSize].n = instructionCounter++;
+        si[*instructionSize].operand = addr;
+        *instructionSize += 1;
+    } else if (!strcmp(tok, "IF")) {
+    } else if (!strcmp(tok, "LET")) {
+        strcpy(bf, str);
+        tok = strtok(bf, " ");
+        tok = strtok(NULL, "\n");
+        if (to_sa(tok, vars, vars_size, si, instructionSize) == ERROR_CODE) return ERROR_CODE;
+    } else if (!strcmp(tok, "END")) {
+        strcpy(si[*instructionSize].instruction, "HALT");
+        si[*instructionSize].n = instructionCounter++;
+        si[*instructionSize].operand = 0;
+        *instructionSize += 1;
+    } else {
+        char* name = tok;
+        if ((tok = strtok(NULL, " ")) && !strcmp(tok, "=")) {
+            int addr;
+            if ((addr = var_getaddress(vars, name)) == -1) {
+                fprintf(stderr, "sbt:\e[31m fatal error:\e[39m: Undeclared variable: %s\n", tok);
+                return ERROR_CODE;
+            }
+            tok = strtok(NULL, " ");
+            int addr_start;
+            if ((addr_start = var_getaddress(vars, tok)) == -1) {
+                fprintf(stderr, "sbt:\e[31m fatal error:\e[39m: Undeclared variable: %s\n", tok);
+                return ERROR_CODE;
+            }
+            strcpy(si[*instructionSize].instruction, "LOAD");
+            si[*instructionSize].n = instructionCounter++;
+            si[*instructionSize].operand = addr_start;
+            *instructionSize += 1;
+            char* lname = tok;
+            while ((tok = strtok(NULL, " "))) {
+                if (!strcmp(tok, "+")) {
+                    if ((addr_start = var_getaddress(vars, lname)) == -1) {
+                        fprintf(stderr, "sbt:\e[31m fatal error:\e[39m: Undeclared variable: %s\n", tok);
+                        return ERROR_CODE;
+                    }
+                    strcpy(si[*instructionSize].instruction, "ADD");
+                    si[*instructionSize].n = instructionCounter++;
+                    si[*instructionSize].operand = addr_start;
+                    *instructionSize += 1;
+                } else if (!strcmp(tok, "-")) {
+                    if ((addr_start = var_getaddress(vars, lname)) == -1) {
+                        fprintf(stderr, "sbt:\e[31m fatal error:\e[39m: Undeclared variable: %s\n", tok);
+                        return ERROR_CODE;
+                    }
+                    strcpy(si[*instructionSize].instruction, "SUB");
+                    si[*instructionSize].n = instructionCounter++;
+                    si[*instructionSize].operand = addr_start;
+                    *instructionSize += 1;
+                } else if (!strcmp(tok, "*")) {
+                    if ((addr_start = var_getaddress(vars, lname)) == -1) {
+                        fprintf(stderr, "sbt:\e[31m fatal error:\e[39m: Undeclared variable: %s\n", tok);
+                        return ERROR_CODE;
+                    }
+                    strcpy(si[*instructionSize].instruction, "MUL");
+                    si[*instructionSize].n = instructionCounter++;
+                    si[*instructionSize].operand = addr_start;
+                    *instructionSize += 1;
+                } else if (!strcmp(tok, "/")) {
+                    if ((addr_start = var_getaddress(vars, lname)) == -1) {
+                        fprintf(stderr, "sbt:\e[31m fatal error:\e[39m: Undeclared variable: %s\n", tok);
+                        return ERROR_CODE;
+                    }
+                    strcpy(si[*instructionSize].instruction, "DIVIDE");
+                    si[*instructionSize].n = instructionCounter++;
+                    si[*instructionSize].operand = addr_start;
+                    *instructionSize += 1;
+                } else {
+                    lname = tok;
+                }
+            }
+            strcpy(si[*instructionSize].instruction, "STORE");
+            si[*instructionSize].n = instructionCounter++;
+            si[*instructionSize].operand = addr;
+            *instructionSize += 1;
+        } else {
+            fprintf(stderr, "sbt:\e[31m fatal error:\e[39m %s: Unknown instruction\n", tok);
+            return ERROR_CODE;
+        }
+    }
+    return SUCCES_CODE;
+}
+
 int sbt(const char* filepath, const char* result) {
     FILE* file = fopen(filepath, "r");
 
@@ -410,8 +436,26 @@ int sbt(const char* filepath, const char* result) {
         }
     }
 
+    sbinstruction si[100];
+    int instructionSize = 0;
     for (int i = 0; strs[i].root; ++i) {
-        printf("%s\n", strs[i].root->stack);
+        to_sa(strs[i].root->stack, var, &var_size, si, &instructionSize);
+    }
+
+    FILE* file_sa = fopen(result, "w");
+    for (int i = 0; i < 100; ++i) {
+        if (si[i].instruction[0])
+            fprintf(file_sa, "%02d %s %02d\n", si[i].n, si[i].instruction, si[i].operand);
+    }
+    fclose(file_sa);
+
+    // for (int i = 0; strs[i].root; ++i) {
+    //     printf("%s\n", strs[i].root->stack);
+    // }
+
+    for (int i = 0; strs[i].root; ++i) {
+        free(strs[i].root->stack);
+        free(strs[i].root);
     }
 
     return SUCCES_CODE;
