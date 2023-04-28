@@ -17,12 +17,10 @@ static int base_x = 2;
 static int base_y = 2;
 
 int instructionCounter = 0;
-int nextInstruction = -1;
+
+bool last_jump = false;
 
 int lastsig = -1;
-
-int cur_x = 0;
-int cur_y = 0;
 
 int startcu = false;
 int rig = false;
@@ -61,7 +59,11 @@ void I_stopsc(int sig) {
 
 void I_sigalarm(int sig) {
     lastsig = sig;
-    I_move_address_xy(2);
+    if (last_jump) {
+        last_jump = false;
+    } else {
+        I_move_address_xy(2);
+    }
     I_scstep(0);
 }
 
@@ -81,8 +83,9 @@ int I_startsc() {
 int I_scstep(int rignore) {
     if (I_printinstructionCounter()) return ERROR_CODE;
     if (I_printoperations()) return ERROR_CODE;
+    if (I_printaccumulator()) return ERROR_CODE;
     if (I_printflags()) return ERROR_CODE;
-    if (I_printbig(cur_x, cur_y)) return ERROR_CODE;
+    if (I_printbig(instructionCounter)) return ERROR_CODE;
     if (mt_gotoXY(24, 5)) return ERROR_CODE;
     if (rignore) {
         enum keys key = 99;
@@ -100,42 +103,29 @@ int I_scstep(int rignore) {
 }
 
 int I_move_address_xy(const int d) {
-    if (I_printhex(cur_x, cur_y, color_default, color_default)) return ERROR_CODE;
+    if (I_printhex(instructionCounter, color_default, color_default)) return ERROR_CODE;
     switch (d) {
         case 0:
-            if (!cur_x)
-                cur_x = DEFAULT_MAX_STRS - 1;
-            else
-                cur_x -= 1;
+            instructionCounter -= 10;
+            if (instructionCounter < 0) instructionCounter += 10;
             break;
         case 1:
-            if (cur_x == DEFAULT_MAX_STRS - 1)
-                cur_x = 0;
-            else
-                cur_x += 1;
+            instructionCounter += 10;
+            if (instructionCounter >= DEFAULT_MEMORY_INIT) instructionCounter -= 10;
             break;
         case 2:
-            if (cur_y == DEFAULT_MAX_STRS - 1) {
-                cur_y = 0;
-                cur_x = cur_x == DEFAULT_MAX_STRS - 1 ? 0 : cur_x + 1;
-            } else {
-                cur_y += 1;
-            }
+            instructionCounter += 1;
+            if (instructionCounter >= DEFAULT_MEMORY_INIT) instructionCounter -= 1;
             break;
         case 3:
-            if (!cur_y) {
-                cur_y = DEFAULT_MAX_STRS - 1;
-                cur_x = !cur_x ? DEFAULT_MAX_STRS - 1 : cur_x - 1;
-            } else {
-                cur_y -= 1;
-            }
+            instructionCounter -= 1;
+            if (instructionCounter < 0) instructionCounter += 1;
             break;
 
         default:
             break;
     }
-    instructionCounter = DEFAULT_MAX_STRS * cur_x + cur_y;
-    if (I_printhex(cur_x, cur_y, color_red, color_default)) return ERROR_CODE;
+    if (I_printhex(instructionCounter, color_red, color_default)) return ERROR_CODE;
     return SUCCES_CODE;
 }
 
@@ -149,16 +139,18 @@ int I_printall(void) {
     sc_print(" Memory ");
     for (int i = 0; i < DEFAULT_MAX_STRS; ++i) {
         for (int j = 0; j < DEFAULT_MAX_STRS; ++j) {
-            if (I_printhex(i, j, color_default, color_default)) return ERROR_CODE;
+            if (I_printhex(i * DEFAULT_MAX_STRS + j, color_default, color_default)) return ERROR_CODE;
         }
     }
-    if (I_printbig(0, 0)) return ERROR_CODE;
+    if (I_printbig(0)) return ERROR_CODE;
     if (I_printkeys()) return ERROR_CODE;
-    if (I_printhex(cur_x, cur_y, color_red, color_default)) return ERROR_CODE;
+    if (I_printhex(instructionCounter, color_red, color_default)) return ERROR_CODE;
     return SUCCES_CODE;
 }
 
-int I_printhex(int i, int j, enum colors fg, enum colors bg) {
+int I_printhex(int ic, enum colors fg, enum colors bg) {
+    int i = ic / 10;
+    int j = ic % 10;
     if (mt_setfgcolor(fg)) return ERROR_CODE;
     if (mt_setbgcolor(bg)) return ERROR_CODE;
     if (i >= DEFAULT_MAX_STRS || j >= DEFAULT_MAX_STRS || i < 0 || j < 0) {
@@ -241,8 +233,10 @@ int _I_printbig(const char d, int x, int y) {
     }
 }
 
-int I_printbig(int x, int y) {
+int I_printbig(int ic) {
     int c;
+    int x = ic / 10;
+    int y = ic % 10;
     if (sc_memoryGet(DEFAULT_MAX_STRS * x + y, &c)) return ERROR_CODE;
     char digit[5];
     int command, operand;
@@ -386,10 +380,8 @@ int I_setInstructionCounter(void) {
         sc_regSet(err_out_of_range, 1);
         return ERROR_CODE;
     }
-    if (I_printhex(cur_x, cur_y, color_default, color_default)) return ERROR_CODE;
+    if (I_printhex(instructionCounter, color_default, color_default)) return ERROR_CODE;
     instructionCounter = (int)c;
-    cur_x = instructionCounter / 10;
-    cur_y = instructionCounter % 10;
     I_move_address_xy(5);
     I_printInputField(0, NULL);
     return I_printinstructionCounter();
@@ -443,10 +435,8 @@ int I_moveInstructionCounter(int ic) {
         sc_regSet(err_out_of_range, 1);
         return ERROR_CODE;
     }
-    if (I_printhex(cur_x, cur_y, color_default, color_default)) return ERROR_CODE;
+    if (I_printhex(instructionCounter, color_default, color_default)) return ERROR_CODE;
     instructionCounter = c;
-    cur_x = instructionCounter / 10;
-    cur_y = instructionCounter % 10;
     I_move_address_xy(5);
     I_printInputField(0, NULL);
     return I_printinstructionCounter();

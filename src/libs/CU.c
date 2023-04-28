@@ -61,7 +61,7 @@ int cu_read(int operand) {
         val = ((-c1) & 0x3fff) | 0x4000;
     else
         val = c1 & 0x3fff;
-    return sc_memorySet(operand, val) || I_printhex(operand / 10, operand % 10, color_default, color_default);
+    return sc_memorySet(operand, val) || I_printhex(operand, color_default, color_default);
 }
 
 int cu_write(int operand) {
@@ -77,7 +77,8 @@ int cu_load(int operand) {
 }
 
 int cu_store(int operand) {
-    if (sc_memorySet(operand, accumulator)) return ERROR_CODE;
+    if (sc_memorySet(operand, accumulator) || I_printhex(operand, color_default, color_default))
+        return ERROR_CODE;
     return SUCCES_CODE;
 }
 
@@ -86,6 +87,7 @@ int cu_jump(int operand) {
         sc_regSet(err_out_of_range, 1);
         return ERROR_CODE;
     } else {
+        last_jump = true;
         I_moveInstructionCounter(operand);
         return SUCCES_CODE;
     }
@@ -96,8 +98,8 @@ int cu_jneg(int operand) {
         sc_regSet(err_out_of_range, 1);
         return ERROR_CODE;
     } else if (accumulator & 0x4000) {
+        last_jump = true;
         I_moveInstructionCounter(operand);
-        CU();
         return SUCCES_CODE;
     }
     return ERROR_CODE;
@@ -108,6 +110,7 @@ int cu_jz(int operand) {
         sc_regSet(err_out_of_range, 1);
         return ERROR_CODE;
     } else if (!accumulator) {
+        last_jump = true;
         I_moveInstructionCounter(operand);
         return SUCCES_CODE;
     }

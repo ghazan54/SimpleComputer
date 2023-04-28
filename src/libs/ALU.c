@@ -9,9 +9,6 @@
 #include <unistd.h>
 
 int ALU(int command, int operand) {
-    int val;
-    if (sc_memoryGet(instructionCounter, &val)) return ERROR_CODE;
-    if (sc_commandDecode(val, &command, &operand)) return ERROR_CODE;
     switch (command) {
         case 0x30:
             return alu_add(operand);

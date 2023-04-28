@@ -79,8 +79,7 @@ int rk_keyaction(const enum keys key) {
         case key_LEFT:
             return I_move_address_xy(3);
         case key_ENTER:
-            return cu_read(cur_x * DEFAULT_MAX_STRS + cur_y) ||
-                   I_printhex(cur_x, cur_y, color_red, color_default);
+            return cu_read(instructionCounter) || I_printhex(instructionCounter, color_red, color_default);
         default:
             // I_printOutputField("Unknow key");
             break;
