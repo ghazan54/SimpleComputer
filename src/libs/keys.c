@@ -60,6 +60,7 @@ int rk_keyaction(const enum keys key) {
             return sc_memorySave(SAVE_PATH);
         case key_R:
             startcu = 2;
+            halt_ex = false;
             return SUCCES_CODE;
         case key_T:
             startcu = 1;

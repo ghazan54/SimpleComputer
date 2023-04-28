@@ -28,7 +28,7 @@ int rig = false;
 int rignore = 1;
 int outpitLine = 0;
 
-static bool halt_ex = false;
+bool halt_ex = false;
 
 const int bigChars[][2] = {{0x8181817E, 0x7E818181}, {0x40485060, 0x40404040}, {0x2040423C, 0x7E040810},
                            {0x7C40407C, 0x7C404040}, {0x7E424242, 0x40404040}, {0x7E02027E, 0x7E404040},
@@ -74,6 +74,7 @@ int I_startsc() {
         signal(SIGALRM, I_sigalarm);
         signal(SIGUSR1, I_sigusr1);
         if (rignore) {
+            I_printOutputField("yes");
             I_scstep(rignore);
         }
     }

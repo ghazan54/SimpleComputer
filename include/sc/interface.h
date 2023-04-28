@@ -21,6 +21,7 @@ extern int lastsig;
 extern int startcu;
 
 extern bool last_jump;
+extern bool halt_ex;
 
 int I_simplecomputer(void);
 int I_printall(void);
