@@ -42,17 +42,25 @@ int getCommand(char* s) {
     return c;
 }
 
+void del_newline_in_str(char* s) {
+    if (s[strlen(s) - 1] == '\n') s[strlen(s) - 1] = 0;
+}
+
 int sat(const char* filepath) {
     FILE* file = fopen(filepath, "r");
     if (!file) {
         fprintf(stderr, "sat:\e[31m fatal error:\e[39m %s: There is no such file or directory\n", filepath);
         return ERROR_CODE;
     }
-    int memory[MEMORY_SIZE] = {0};
+    int memory[MEMORY_SIZE];
+    memset(memory, 0, MEMORY_SIZE);
     int count_strs = 1;
     while (!feof(file)) {
         char buf[BUFSIZ] = {0};
         fgets(buf, BUFSIZ, file);
+        if (strlen(buf) < 1) break;
+
+        del_newline_in_str(buf);
 
         char* tok = strtok(buf, " ");  //* get index memory
         int i = atoi(tok);
@@ -77,7 +85,7 @@ int sat(const char* filepath) {
         }
 
         tok = strtok(NULL, " ");  //* get comment
-        if (*tok != ';') {
+        if (tok && *tok != ';') {
             fprintf(stderr, "sat:%d\e[31m syntax error:\e[39m %s: The ';' character was expected\n",
                     count_strs, tok);
             return ERROR_CODE;
@@ -95,7 +103,6 @@ int sat(const char* filepath) {
             }
         }
         ++count_strs;
-        printf("%X\n", i);
     }
     fclose(file);
 

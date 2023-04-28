@@ -296,10 +296,18 @@ typedef struct simple_assembler_instruction {
     char instruction[8];
     int n;
     int operand;
+    int n_sb;
 } sbinstruction;
 
-int to_sa(char* str, variables* vars, int* vars_size, sbinstruction* si, int* instructionSize) {
-    static int instructionCounter = 1;
+int get_sa_address(sbinstruction* si, int instructionSize, int n_sb) {
+    for (int i = 0; i < instructionSize; ++i) {
+        if (si[i].n_sb == n_sb) return si[i].n;
+    }
+    return -1;
+}
+
+int to_sa(char* str, variables* vars, int ni, sbinstruction* si, int* instructionSize) {
+    static int instructionCounter = 0;
 
     char bf[BUFSIZ];
     strcpy(bf, str);
@@ -317,6 +325,7 @@ int to_sa(char* str, variables* vars, int* vars_size, sbinstruction* si, int* in
         }
         si[*instructionSize].n = instructionCounter++;
         si[*instructionSize].operand = addr;
+        si[*instructionSize].n_sb = ni;
         *instructionSize += 1;
     } else if (!strcmp(tok, "PRINT")) {
         strcpy(si[*instructionSize].instruction, "WRITE");
@@ -328,28 +337,85 @@ int to_sa(char* str, variables* vars, int* vars_size, sbinstruction* si, int* in
         }
         si[*instructionSize].n = instructionCounter++;
         si[*instructionSize].operand = addr;
+        si[*instructionSize].n_sb = ni;
         *instructionSize += 1;
     } else if (!strcmp(tok, "GOTO")) {
         strcpy(si[*instructionSize].instruction, "JUMP");
         tok = strtok(NULL, " ");
         int addr = atoi(tok);
-        if (!addr && *tok != '0') {
+        int sa_addr;
+        if ((!addr && *tok != '0') || (sa_addr = get_sa_address(si, *instructionSize, addr)) == -1) {
             fprintf(stderr, "sbt:\e[31m fatal error:\e[39m: Invalid address: %s\n", tok);
             return ERROR_CODE;
         }
         si[*instructionSize].n = instructionCounter++;
-        si[*instructionSize].operand = addr;
+        si[*instructionSize].operand = sa_addr;
+        si[*instructionSize].n_sb = ni;
         *instructionSize += 1;
     } else if (!strcmp(tok, "IF")) {
+        tok = strtok(NULL, " ");  //* get operand
+        int addr;
+        if ((addr = var_getaddress(vars, tok)) == -1) {
+            fprintf(stderr, "sbt:\e[31m fatal error:\e[39m: Undeclared variable: %s\n", tok);
+            return ERROR_CODE;
+        }
+        tok = strtok(NULL, " ");  //* get operation
+        strcpy(si[*instructionSize].instruction, "LOAD");
+        si[*instructionSize].n = instructionCounter++;
+        si[*instructionSize].operand = addr;
+        si[*instructionSize].n_sb = ni;
+        *instructionSize += 1;
+        if (!strcmp(tok, ">")) {
+            tok = strtok(NULL, " ");  //* get operand
+            if (!strcmp(tok, "0")) {
+                strcpy(bf, str);
+                tok = strstr(bf, "0") + 1;
+                int cur_i = *instructionSize;
+                strcpy(si[*instructionSize].instruction, "JNEG");
+                si[*instructionSize].n = instructionCounter++;
+                si[*instructionSize].n_sb = ni;
+                *instructionSize += 1;
+                to_sa(tok, vars, ni, si, instructionSize);
+                si[cur_i].operand = instructionCounter;
+            } else {
+                fprintf(stderr, "sbt:\e[31m fatal error:\e[39m: Invalid comparison: %s\n", tok);
+                return ERROR_CODE;
+            }
+        } else if (!strcmp(tok, "<")) {
+            tok = strtok(NULL, " ");  //* get operand
+            if (!strcmp(tok, "0")) {
+                strcpy(bf, str);
+                tok = strstr(bf, "0") + 1;
+                strcpy(si[*instructionSize].instruction, "JNEG");
+                si[*instructionSize].n = instructionCounter++;
+                si[*instructionSize].operand = instructionCounter + 1;
+                si[*instructionSize].n_sb = ni;
+                *instructionSize += 1;
+                strcpy(si[*instructionSize].instruction, "JUMP");
+                si[*instructionSize].n = instructionCounter++;
+                si[*instructionSize].n_sb = ni;
+                int cur_i = *instructionSize;
+                *instructionSize += 1;
+                to_sa(tok, vars, ni, si, instructionSize);
+                si[cur_i].operand = instructionCounter;
+            } else {
+                fprintf(stderr, "sbt:\e[31m fatal error:\e[39m: Invalid comparison: %s\n", tok);
+                return ERROR_CODE;
+            }
+        } else {
+            fprintf(stderr, "sbt:\e[31m fatal error:\e[39m: Invalid operation: %s\n", tok);
+            return ERROR_CODE;
+        }
     } else if (!strcmp(tok, "LET")) {
         strcpy(bf, str);
         tok = strtok(bf, " ");
         tok = strtok(NULL, "\n");
-        if (to_sa(tok, vars, vars_size, si, instructionSize) == ERROR_CODE) return ERROR_CODE;
+        if (to_sa(tok, vars, ni, si, instructionSize) == ERROR_CODE) return ERROR_CODE;
     } else if (!strcmp(tok, "END")) {
         strcpy(si[*instructionSize].instruction, "HALT");
         si[*instructionSize].n = instructionCounter++;
         si[*instructionSize].operand = 0;
+        si[*instructionSize].n_sb = ni;
         *instructionSize += 1;
     } else {
         char* name = tok;
@@ -379,6 +445,7 @@ int to_sa(char* str, variables* vars, int* vars_size, sbinstruction* si, int* in
                     strcpy(si[*instructionSize].instruction, "LOAD");
                     si[*instructionSize].n = instructionCounter++;
                     si[*instructionSize].operand = addr_start;
+                    si[*instructionSize].n_sb = ni;
                     *instructionSize += 1;
                     push(&stck, b);
                     push(&stck, a);
@@ -392,6 +459,7 @@ int to_sa(char* str, variables* vars, int* vars_size, sbinstruction* si, int* in
                     strcpy(si[*instructionSize].instruction, "ADD");
                     si[*instructionSize].n = instructionCounter++;
                     si[*instructionSize].operand = addr_start;
+                    si[*instructionSize].n_sb = ni;
                     *instructionSize += 1;
                     push(&stck, name);
                     free(a);
@@ -403,6 +471,7 @@ int to_sa(char* str, variables* vars, int* vars_size, sbinstruction* si, int* in
                     strcpy(si[*instructionSize].instruction, "SUB");
                     si[*instructionSize].n = instructionCounter++;
                     si[*instructionSize].operand = addr_start;
+                    si[*instructionSize].n_sb = ni;
                     *instructionSize += 1;
                     push(&stck, name);
                     free(a);
@@ -414,6 +483,7 @@ int to_sa(char* str, variables* vars, int* vars_size, sbinstruction* si, int* in
                     strcpy(si[*instructionSize].instruction, "MUL");
                     si[*instructionSize].n = instructionCounter++;
                     si[*instructionSize].operand = addr_start;
+                    si[*instructionSize].n_sb = ni;
                     *instructionSize += 1;
                     push(&stck, name);
                     free(a);
@@ -425,6 +495,7 @@ int to_sa(char* str, variables* vars, int* vars_size, sbinstruction* si, int* in
                     strcpy(si[*instructionSize].instruction, "DIVIDE");
                     si[*instructionSize].n = instructionCounter++;
                     si[*instructionSize].operand = addr_start;
+                    si[*instructionSize].n_sb = ni;
                     *instructionSize += 1;
                     push(&stck, name);
                     free(a);
@@ -441,6 +512,7 @@ int to_sa(char* str, variables* vars, int* vars_size, sbinstruction* si, int* in
             strcpy(si[*instructionSize].instruction, "STORE");
             si[*instructionSize].n = instructionCounter++;
             si[*instructionSize].operand = addr;
+            si[*instructionSize].n_sb = ni;
             *instructionSize += 1;
         } else {
             fprintf(stderr, "sbt:\e[31m fatal error:\e[39m %s: Unknown instruction\n", tok);
@@ -490,13 +562,19 @@ int sbt(const char* filepath, const char* result) {
     sbinstruction si[100];
     int instructionSize = 0;
     for (int i = 0; strs[i].root; ++i) {
-        to_sa(strs[i].root->data, var, &var_size, si, &instructionSize);
+        to_sa(strs[i].root->data, var, strs[i].n, si, &instructionSize);
     }
 
     FILE* file_sa = fopen(result, "w");
+    int last_i = -1;
     for (int i = 0; i < 100; ++i) {
-        if (si[i].instruction[0])
+        if (si[i].instruction[0]) {
             fprintf(file_sa, "%02d %s %02d\n", si[i].n, si[i].instruction, si[i].operand);
+            last_i = si[i].n;
+        }
+    }
+    for (int i = 99; i >= 0 && var[i].name; --i, ++last_i) {
+        fprintf(file_sa, "%02d %s    +%04X\n", i, "=", var[i].value);
     }
     fclose(file_sa);
 
