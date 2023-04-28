@@ -74,7 +74,6 @@ int I_startsc() {
         signal(SIGALRM, I_sigalarm);
         signal(SIGUSR1, I_sigusr1);
         if (rignore) {
-            I_printOutputField("yes");
             I_scstep(rignore);
         }
     }

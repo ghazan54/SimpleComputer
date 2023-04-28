@@ -565,16 +565,31 @@ int sbt(const char* filepath, const char* result) {
         to_sa(strs[i].root->data, var, strs[i].n, si, &instructionSize);
     }
 
+    typedef struct {
+        int n;
+        int old;
+    } pair_int;
+
+    pair_int new_idxs[99 - var_size];
+    for (int i = 0, j = 99, last_i = instructionSize; j > var_size; ++i, --j) {
+        new_idxs[i].n = last_i++;
+        new_idxs[i].old = var[j].address;
+        var[j].address = new_idxs[i].n;
+    }
+    for (int i = 0; i < 99 - var_size; ++i) {
+        for (int j = 0; j < 100; ++j) {
+            if (new_idxs[i].old == si[j].operand) si[j].operand = new_idxs[i].n;
+        }
+    }
+
     FILE* file_sa = fopen(result, "w");
-    int last_i = -1;
     for (int i = 0; i < 100; ++i) {
         if (si[i].instruction[0]) {
             fprintf(file_sa, "%02d %s %02d\n", si[i].n, si[i].instruction, si[i].operand);
-            last_i = si[i].n;
         }
     }
-    for (int i = 99; i >= 0 && var[i].name; --i, ++last_i) {
-        fprintf(file_sa, "%02d %s    +%04X\n", i, "=", var[i].value);
+    for (int i = 99; i >= 0 && var[i].name; --i) {
+        fprintf(file_sa, "%02d %s    +%04X\n", var[i].address, "=", var[i].value);
     }
     fclose(file_sa);
 
