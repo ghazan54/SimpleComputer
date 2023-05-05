@@ -31,6 +31,7 @@ int ALU(int command, int operand) {
 int alu_add(int operand) {
     int val;
     if (sc_memoryGet(operand, &val)) return ERROR_CODE;
+    // val = val & 0x4000 ? -val : val;
     bool sign = accumulator & 0x4000 ? true : false;
     accumulator &= 0x3fff;
     accumulator = sign ? -accumulator : accumulator;
@@ -53,6 +54,7 @@ int alu_add(int operand) {
 int alu_sub(int operand) {
     int val;
     if (sc_memoryGet(operand, &val)) return ERROR_CODE;
+    // val = val & 0x4000 ? -val : val;
     bool sign = accumulator & 0x4000 ? true : false;
     accumulator &= 0x3fff;
     accumulator = sign ? -accumulator : accumulator;
@@ -75,6 +77,7 @@ int alu_sub(int operand) {
 int alu_divide(int operand) {
     int val;
     if (sc_memoryGet(operand, &val)) return ERROR_CODE;
+    // val = val & 0x4000 ? -val : val;
     if (!(val & 0x3fff)) {
         sc_regSet(err_division_by_zero, 1);
         return ERROR_CODE;
@@ -98,6 +101,7 @@ int alu_divide(int operand) {
 int alu_mul(int operand) {
     int val;
     if (sc_memoryGet(operand, &val)) return ERROR_CODE;
+    // val = val & 0x4000 ? -val : val;
     bool sign = accumulator & 0x4000 ? true : false;
     accumulator &= 0x3fff;
     accumulator = sign ? -accumulator : accumulator;

@@ -46,7 +46,7 @@ void del_newline_in_str(char* s) {
     if (s[strlen(s) - 1] == '\n') s[strlen(s) - 1] = 0;
 }
 
-int sat(const char* filepath) {
+int sat(const char* filepath, const char* result) {
     FILE* file = fopen(filepath, "r");
     if (!file) {
         fprintf(stderr, "sat:\e[31m fatal error:\e[39m %s: There is no such file or directory\n", filepath);
@@ -106,7 +106,7 @@ int sat(const char* filepath) {
     }
     fclose(file);
 
-    FILE* data = fopen("data/myMemory.data", "wb");
+    FILE* data = fopen(result, "wb");
     if (!data) {
         fprintf(stderr, "sat:\e[31m fatal error:\e[39m %s: Failed to save result\n", filepath);
         return ERROR_CODE;
@@ -118,6 +118,6 @@ int sat(const char* filepath) {
 }
 
 int main(int argc, char** argv) {
-    if (argc < 2) return ERROR_CODE;
-    return sat(argv[1]);
+    if (argc < 3) return ERROR_CODE;
+    return sat(argv[1], argv[2]);
 }

@@ -45,6 +45,11 @@ int CU() {
         default:
             sc_regSet(err_invalid_command, 1);
             sc_regSet(err_ignoring_clock_pulses, 1);
+            I_printflags();
+            while (1) {
+                usleep(100000);
+                I_printInputField(0, NULL);
+            }
             break;
     }
     return ERROR_CODE;
@@ -66,7 +71,7 @@ int cu_read(int operand) {
 
 int cu_write(int operand) {
     int c, ret = sc_memoryGet(operand, &c);
-    return I_printOutputField("%04X", c) && ret;
+    return I_printOutputField("%c%X", c & 0x4000 ? '-' : '+', c & 0x3fff) || ret;
 }
 
 int cu_load(int operand) {

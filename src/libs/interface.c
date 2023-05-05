@@ -53,7 +53,7 @@ int I_simplecomputer(void) {
 void I_stopsc(int sig) {
     lastsig = sig;
     sc_memoryFree();
-    mt_gotoXY(31, 0);
+    mt_gotoXY(33, 0);
     exit(SUCCES_CODE);
 }
 
@@ -272,9 +272,6 @@ int I_printaccumulator() {
     sc_print(" accumulator ");
     if (mt_gotoXY(I_POS_ACCUMULATOR_X, I_POS_ACCUMULATOR_Y)) return ERROR_CODE;
 
-    // int v1, v2;
-    // if (sc_commandDecode(accumulator, &v1, &v2))
-    //     return ERROR_CODE;
     accumulator & 0x4000 ? sc_print("-") : sc_print("+");
     sc_print("%04X", accumulator & 0x3fff);
     return SUCCES_CODE;
@@ -292,8 +289,7 @@ int I_printoperations() {
     if (mt_gotoXY(7, 68)) return ERROR_CODE;
     sc_print(" Operation ");
     if (mt_gotoXY(I_POS_OPERATION_X, I_POS_OPERATION_Y)) return ERROR_CODE;
-    // operations = instructionCounter | (cur_command << 8);
-    // sc_commandDecode(operations, &cur_command, &instructionCounter);
+
     int t1, t2, val;
     if (sc_memoryGet(instructionCounter, &val)) return ERROR_CODE;
     if (sc_commandDecode(val, &t1, &t2)) return ERROR_CODE;

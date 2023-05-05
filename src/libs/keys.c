@@ -4,6 +4,7 @@
 #include <sc/keys.h>
 #include <sc/ram-operations.h>
 #include <signal.h>
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <sys/stat.h>
@@ -54,7 +55,11 @@ int rk_readkey(enum keys* key) {
 int rk_keyaction(const enum keys key) {
     switch (key) {
         case key_L:
-            return sc_memoryLoad(SAVE_PATH) || I_printall();
+            char bf[32] = {0};
+            I_printInputField(1, "path: ");
+            scanf("%s", bf);
+            I_printInputField(0, NULL);
+            return sc_memoryLoad(bf) || I_printall();
         case key_S:
             mkdir("data", S_IRWXU | S_IRWXG | S_IRWXO);
             return sc_memorySave(SAVE_PATH);

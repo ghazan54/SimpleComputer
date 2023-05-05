@@ -37,10 +37,10 @@ int bc_box(int x1, int y1, const int x2, const int y2) {
         } else {
             bool firsty = true;
             for (int _y1 = y1; _y1 <= y2; ++_y1, firsty = false) {
-                firsty || _y1 == y2 ? bc_printA(ACS_VLINE) : printf(" ");
+                firsty || _y1 == y2 ? bc_printA(ACS_VLINE) : sc_print(" ");
             }
         }
-        printf("\n");
+        sc_print("\n");
     }
     return SUCCES_CODE;
 }
@@ -55,9 +55,9 @@ int bc_printbigchar(const int n1[2], int x, int y, enum colors fg, enum colors b
             for (int k = 0; k < 8; ++k) {
                 int bit = n[i] & 0x1;
                 n[i] >>= 1;
-                bit ? bc_printA(ACS_CKBOARD) : printf(" ");
+                bit ? bc_printA(ACS_CKBOARD) : sc_print(" ");
             }
-            printf("\n");
+            sc_print("\n");
         }
     }
     if (mt_gotoXY(++x, y)) return ERROR_CODE;
