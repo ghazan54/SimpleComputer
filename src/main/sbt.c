@@ -173,9 +173,7 @@ char* to_postfix(char* expr, static_stack* s) {
             continue;
         } else if (isdigit(*q) || (*q == '-' && isdigit(*(q + 1)))) {
             *p++ = *q;
-            if (*q == '-') {
-                q++;
-            }
+            q++;
             while (isdigit(*q) || *q == '.') {
                 *p++ = *q;
                 q++;
@@ -255,7 +253,7 @@ int build_stack(char* s, sbstring* str, variables* vars, int* vars_size) {
             return ERROR_CODE;
         }
         tok = strtok(NULL, " ");  //* get operator
-        if (!tok || (strcmp(tok, ">") && strcmp(tok, "<"))) {
+        if (!tok || (strcmp(tok, ">") && strcmp(tok, "<") && strcmp(tok, "="))) {
             fprintf(stderr,
                     "sbt:\e[31m syntax error:\e[39m %s: Conditional operator ('>' or '<') was expected\n",
                     tok);
@@ -381,6 +379,10 @@ int to_sa(char* str, variables* vars, int* vars_size, int ni, sbinstruction* si,
     } else if (!strcmp(tok, "IF")) {
         tok = strtok(NULL, " ");  //* get operand
         int addr;
+        if (is_count(tok)) {
+            fprintf(stderr, "sbt:\e[31m fatal error:\e[39m: Inlavid lvalue: %s\n", tok);
+            return ERROR_CODE;
+        }
         if ((addr = var_getaddress(vars, tok)) == -1) {
             fprintf(stderr, "sbt:\e[31m fatal error:\e[39m: Undeclared variable: %s\n", tok);
             return ERROR_CODE;
@@ -393,6 +395,8 @@ int to_sa(char* str, variables* vars, int* vars_size, int ni, sbinstruction* si,
         *instructionSize += 1;
         if (!strcmp(tok, ">")) {
             tok = strtok(NULL, " ");  //* get operand
+            if (var_getaddress(vars, tok) == -1 && is_count(tok) && strcmp(tok, "0"))
+                add_count_in_stack(vars, vars_size, tok, atoi(tok));
             if (!strcmp(tok, "0")) {
                 strcpy(bf, str);
                 tok = strstr(bf, "0") + 1;
@@ -404,11 +408,30 @@ int to_sa(char* str, variables* vars, int* vars_size, int ni, sbinstruction* si,
                 to_sa(tok, vars, vars_size, ni, si, instructionSize);
                 si[cur_i].operand = instructionCounter;
             } else {
-                fprintf(stderr, "sbt:\e[31m fatal error:\e[39m: Invalid comparison: %s\n", tok);
-                return ERROR_CODE;
+                int addr_cmp;
+                if ((addr_cmp = var_getaddress(vars, tok)) == -1) {
+                    fprintf(stderr, "sbt:\e[31m fatal error:\e[39m: Undeclared variable: %s\n", tok);
+                    return ERROR_CODE;
+                }
+                strcpy(si[*instructionSize].instruction, "SUB");
+                si[*instructionSize].n = instructionCounter++;
+                si[*instructionSize].n_sb = ni;
+                si[*instructionSize].operand = addr_cmp;
+                *instructionSize += 1;
+                strcpy(bf, str);
+                tok = strstr(bf, tok) + 1;
+                int cur_i = *instructionSize;
+                strcpy(si[*instructionSize].instruction, "JNEG");
+                si[*instructionSize].n = instructionCounter++;
+                si[*instructionSize].n_sb = ni;
+                *instructionSize += 1;
+                to_sa(tok, vars, vars_size, ni, si, instructionSize);
+                si[cur_i].operand = instructionCounter;
             }
         } else if (!strcmp(tok, "<")) {
             tok = strtok(NULL, " ");  //* get operand
+            if (var_getaddress(vars, tok) == -1 && is_count(tok) && strcmp(tok, "0"))
+                add_count_in_stack(vars, vars_size, tok, atoi(tok));
             if (!strcmp(tok, "0")) {
                 strcpy(bf, str);
                 tok = strstr(bf, "0") + 1;
@@ -425,8 +448,75 @@ int to_sa(char* str, variables* vars, int* vars_size, int ni, sbinstruction* si,
                 to_sa(tok, vars, vars_size, ni, si, instructionSize);
                 si[cur_i].operand = instructionCounter;
             } else {
-                fprintf(stderr, "sbt:\e[31m fatal error:\e[39m: Invalid comparison: %s\n", tok);
-                return ERROR_CODE;
+                int addr_cmp;
+                if ((addr_cmp = var_getaddress(vars, tok)) == -1) {
+                    fprintf(stderr, "sbt:\e[31m fatal error:\e[39m: Undeclared variable: %s\n", tok);
+                    return ERROR_CODE;
+                }
+                strcpy(si[*instructionSize].instruction, "SUB");
+                si[*instructionSize].n = instructionCounter++;
+                si[*instructionSize].n_sb = ni;
+                si[*instructionSize].operand = addr_cmp;
+                *instructionSize += 1;
+                strcpy(bf, str);
+                tok = strstr(bf, tok) + 1;
+                strcpy(si[*instructionSize].instruction, "JNEG");
+                si[*instructionSize].n = instructionCounter++;
+                si[*instructionSize].operand = instructionCounter + 1;
+                si[*instructionSize].n_sb = ni;
+                *instructionSize += 1;
+                strcpy(si[*instructionSize].instruction, "JUMP");
+                si[*instructionSize].n = instructionCounter++;
+                si[*instructionSize].n_sb = ni;
+                int cur_i = *instructionSize;
+                *instructionSize += 1;
+                to_sa(tok, vars, vars_size, ni, si, instructionSize);
+                si[cur_i].operand = instructionCounter;
+            }
+        } else if (!strcmp(tok, "=")) {
+            tok = strtok(NULL, " ");  //* get operand
+            if (var_getaddress(vars, tok) == -1 && is_count(tok) && strcmp(tok, "0"))
+                add_count_in_stack(vars, vars_size, tok, atoi(tok));
+            if (!strcmp(tok, "0")) {
+                strcpy(bf, str);
+                tok = strstr(bf, "0") + 1;
+                strcpy(si[*instructionSize].instruction, "JZ");
+                si[*instructionSize].n = instructionCounter++;
+                si[*instructionSize].operand = instructionCounter + 1;
+                si[*instructionSize].n_sb = ni;
+                *instructionSize += 1;
+                strcpy(si[*instructionSize].instruction, "JUMP");
+                si[*instructionSize].n = instructionCounter++;
+                si[*instructionSize].n_sb = ni;
+                int cur_i = *instructionSize;
+                *instructionSize += 1;
+                to_sa(tok, vars, vars_size, ni, si, instructionSize);
+                si[cur_i].operand = instructionCounter;
+            } else {
+                int addr_cmp;
+                if ((addr_cmp = var_getaddress(vars, tok)) == -1) {
+                    fprintf(stderr, "sbt:\e[31m fatal error:\e[39m: Undeclared variable: %s\n", tok);
+                    return ERROR_CODE;
+                }
+                strcpy(si[*instructionSize].instruction, "SUB");
+                si[*instructionSize].n = instructionCounter++;
+                si[*instructionSize].n_sb = ni;
+                si[*instructionSize].operand = addr_cmp;
+                *instructionSize += 1;
+                strcpy(bf, str);
+                tok = strstr(bf, tok) + 1;
+                strcpy(si[*instructionSize].instruction, "JZ");
+                si[*instructionSize].n = instructionCounter++;
+                si[*instructionSize].operand = instructionCounter + 1;
+                si[*instructionSize].n_sb = ni;
+                *instructionSize += 1;
+                strcpy(si[*instructionSize].instruction, "JUMP");
+                si[*instructionSize].n = instructionCounter++;
+                si[*instructionSize].n_sb = ni;
+                int cur_i = *instructionSize;
+                *instructionSize += 1;
+                to_sa(tok, vars, vars_size, ni, si, instructionSize);
+                si[cur_i].operand = instructionCounter;
             }
         } else {
             fprintf(stderr, "sbt:\e[31m fatal error:\e[39m: Invalid operation: %s\n", tok);

@@ -84,6 +84,8 @@ int sat(const char* filepath, const char* result) {
             return ERROR_CODE;
         }
 
+        if (*tok == '-') operand = -operand;
+
         tok = strtok(NULL, " ");  //* get comment
         if (tok && *tok != ';') {
             fprintf(stderr, "sat:%d\e[31m syntax error:\e[39m %s: The ';' character was expected\n",
