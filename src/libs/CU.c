@@ -1,8 +1,11 @@
 #include <sc/ALU.h>
 #include <sc/CU.h>
+#include <sc/helper.h>
 #include <sc/interface.h>
 #include <signal.h>
 #include <stdint.h>
+#include <stdio.h>
+#include <stdio_ext.h>
 #include <stdlib.h>
 #include <unistd.h>
 
@@ -10,8 +13,8 @@ int accumulator = 0;
 
 int CU() {
     int command, operand, val;
-    if (sc_memoryGet(instructionCounter, &val)) return EXIT_FAILURE;
-    if (sc_commandDecode(val, &command, &operand)) return EXIT_FAILURE;
+    if (sc_memoryGet(instructionCounter, &val)) return ERROR_CODE;
+    if (sc_commandDecode(val, &command, &operand)) return ERROR_CODE;
     switch (command) {
         case 0x10:
             return cu_read(operand);
@@ -41,76 +44,82 @@ int CU() {
             return alu_rcl(operand);
         default:
             sc_regSet(err_invalid_command, 1);
+            sc_regSet(err_ignoring_clock_pulses, 1);
+            I_printflags();
+            while (1) {
+                usleep(100000);
+                I_printInputField(0, NULL);
+            }
             break;
     }
-    return EXIT_FAILURE;
+    return ERROR_CODE;
 }
 
 int cu_read(int operand) {
-    if (rk_mytermsave()) return EXIT_FAILURE;
-    if (rk_mytermregime(0, 0, 2, 1, 0)) return EXIT_FAILURE;
-    char bf1[3] = {0};
-    char bf2[3] = {0};
-    I_printInputField(1, "Read: ");
-    if (read(STDIN_FILENO, bf1, 2) == -1) return EXIT_FAILURE;
-    if (read(STDIN_FILENO, bf2, 2) == -1) return EXIT_FAILURE;
+    int c1, val;
+    I_printInputField(1, " Read: ");
+    scanf("%04X", &c1);
+    __fpurge(stdin);
     I_printInputField(0, NULL);
-    if (rk_mytermrestore()) return EXIT_FAILURE;
-    int c1 = xtoll(bf1);
-    int c2 = xtoll(bf2);
-    if ((!c1 && bf1[0] != '0') || (!c2 && bf2[0] != '0')) return EXIT_FAILURE;
-    int val;
-    sc_commandEncode(c1, c2, &val);
-    return sc_memorySet(operand, val) || I_printhex(operand / 10, operand % 10, color_default, color_default);
+    I_printInputField(0, NULL);
+    if (c1 < 0)
+        val = ((-c1) & 0x3fff) | 0x4000;
+    else
+        val = c1 & 0x3fff;
+    return sc_memorySet(operand, val) || I_printhex(operand, color_default, color_default);
 }
 
 int cu_write(int operand) {
     int c, ret = sc_memoryGet(operand, &c);
-    return I_printOutputField("%04X", c) && ret;
+    return I_printOutputField("%c%X", c & 0x4000 ? '-' : '+', c & 0x3fff) || ret;
 }
 
 int cu_load(int operand) {
     int val;
-    if (sc_memoryGet(operand, &val)) return EXIT_FAILURE;
+    if (sc_memoryGet(operand, &val)) return ERROR_CODE;
     accumulator = val;
-    return EXIT_SUCCESS;
+    return SUCCES_CODE;
 }
 
 int cu_store(int operand) {
-    if (sc_memorySet(operand, accumulator)) return EXIT_FAILURE;
-    return EXIT_SUCCESS;
+    if (sc_memorySet(operand, accumulator) || I_printhex(operand, color_default, color_default))
+        return ERROR_CODE;
+    return SUCCES_CODE;
 }
 
 int cu_jump(int operand) {
     if (operand > 0x63 || operand < 0) {
         sc_regSet(err_out_of_range, 1);
-        return EXIT_FAILURE;
+        return ERROR_CODE;
     } else {
-        instructionCounter = operand;
-        return EXIT_SUCCESS;
+        last_jump = true;
+        I_moveInstructionCounter(operand);
+        return SUCCES_CODE;
     }
 }
 
 int cu_jneg(int operand) {
     if (operand > 0x63 || operand < 0) {
         sc_regSet(err_out_of_range, 1);
-        return EXIT_FAILURE;
-    } else if (accumulator < 0) {
-        instructionCounter = operand;
-        return EXIT_SUCCESS;
+        return ERROR_CODE;
+    } else if (accumulator & 0x4000) {
+        last_jump = true;
+        I_moveInstructionCounter(operand);
+        return SUCCES_CODE;
     }
-    return EXIT_FAILURE;
+    return ERROR_CODE;
 }
 
 int cu_jz(int operand) {
     if (operand > 0x63 || operand < 0) {
         sc_regSet(err_out_of_range, 1);
-        return EXIT_FAILURE;
+        return ERROR_CODE;
     } else if (!accumulator) {
-        instructionCounter = operand;
-        return EXIT_SUCCESS;
+        last_jump = true;
+        I_moveInstructionCounter(operand);
+        return SUCCES_CODE;
     }
-    return EXIT_FAILURE;
+    return ERROR_CODE;
 }
 
-int cu_halt() { return raise(SIGINT) != -1 ? EXIT_SUCCESS : EXIT_FAILURE; }
+int cu_halt() { return I_stopprogram(); }

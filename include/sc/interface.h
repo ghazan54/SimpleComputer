@@ -16,20 +16,18 @@
 #define I_POS_FLAGS_X 11
 #define I_POS_FLAGS_Y 69
 
-#define READ_WAIT (4)
-
-extern int cur_x;
-extern int cur_y;
-
 extern int lastsig;
 
 extern int startcu;
 
+extern bool last_jump;
+extern bool halt_ex;
+
 int I_simplecomputer(void);
 int I_printall(void);
-int I_printhex(int x, int y, enum colors fg, enum colors bg);
+int I_printhex(int ic, enum colors fg, enum colors bg);
 int I_printinfo(const char I, enum colors fg, enum colors bg);
-int I_printbig(int x, int y);
+int I_printbig(int ic);
 int I_printkeys(void);
 int I_printaccumulator(void);
 int I_printinstructionCounter(void);
@@ -44,9 +42,10 @@ int I_move_address_xy(const int d);
 int I_executeOperation(void);
 int I_setAccumulator(void);
 int I_setInstructionCounter(void);
-int I_ignoreimp(void);
+int I_runprogram(void);
 int I_restartsc(void);
-int xtoll(char* s);
+int I_stopprogram(void);
+int I_moveInstructionCounter(int ic);
 
 //* sighandler
 

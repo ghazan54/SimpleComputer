@@ -29,6 +29,7 @@ MODULE_3_LIB = myBigChars
 MODULE_4_LIB = myReadkey
 MODULE_6_LIB = CU
 MODULE_7_LIB = ALU
+MODULE_8_LIB = helper
 MODULE_0 = interface
 MODULE_1 = ram-operations
 MODULE_2 = terminal
@@ -36,12 +37,13 @@ MODULE_3 = bigchar
 MODULE_4 = keys
 MODULE_6 = CU
 MODULE_7 = ALU
+MODULE_8 = helper
 
-MODULES_LINK = $(LIB_DIR)/$(MODULE_0_LIB).a $(LIB_DIR)/$(MODULE_1_LIB).a $(LIB_DIR)/$(MODULE_2_LIB).a $(LIB_DIR)/$(MODULE_3_LIB).a $(LIB_DIR)/$(MODULE_4_LIB).a $(LIB_DIR)/$(MODULE_6_LIB).a $(LIB_DIR)/$(MODULE_7_LIB).a
+MODULES_LINK = $(LIB_DIR)/$(MODULE_0_LIB).a $(LIB_DIR)/$(MODULE_1_LIB).a $(LIB_DIR)/$(MODULE_2_LIB).a $(LIB_DIR)/$(MODULE_3_LIB).a $(LIB_DIR)/$(MODULE_4_LIB).a $(LIB_DIR)/$(MODULE_6_LIB).a $(LIB_DIR)/$(MODULE_7_LIB).a $(LIB_DIR)/$(MODULE_8_LIB).a
 
 .PHONY: all
 
-all: create_dirs $(APP_PATH)
+all: create_dirs $(APP_PATH) sat sbt
 
 create_dirs: create_bin create_obj create_libs
 
@@ -78,6 +80,9 @@ $(LIB_DIR)/$(MODULE_6_LIB).a: $(OBJ_DIR)/$(MODULE_6).o
 $(LIB_DIR)/$(MODULE_7_LIB).a: $(OBJ_DIR)/$(MODULE_7).o
 	ar rcs $@ $^
 
+$(LIB_DIR)/$(MODULE_8_LIB).a: $(OBJ_DIR)/$(MODULE_8).o
+	ar rcs $@ $^
+
 $(OBJ_DIR)/$(MODULE_0).o : $(SRC_LIBS)/$(MODULE_0).c
 	$(CC) -c $(CFLAGS) $(CPPFLAGS) $^ -o $@
 
@@ -99,6 +104,19 @@ $(OBJ_DIR)/$(MODULE_6).o : $(SRC_LIBS)/$(MODULE_6).c
 $(OBJ_DIR)/$(MODULE_7).o : $(SRC_LIBS)/$(MODULE_7).c
 	$(CC) -c $(CFLAGS) $(CPPFLAGS) $^ -o $@
 
+$(OBJ_DIR)/$(MODULE_8).o : $(SRC_LIBS)/$(MODULE_8).c
+	$(CC) -c $(CFLAGS) $(CPPFLAGS) $^ -o $@
+
+sat: create_dirs $(BIN_DIR)/sat
+
+$(BIN_DIR)/sat: $(SRC_LIBS)/helper.c $(MAIN_PATH)/sat.c $(LIB_DIR)/$(MODULE_1_LIB).a
+	$(CC) $(CFLAGS) $(CPPFLAGS) $^ -o $@ $(LDFLAGS) $(LDLIBS)
+
+sbt: create_dirs $(BIN_DIR)/sbt
+
+$(BIN_DIR)/sbt: $(SRC_LIBS)/helper.c $(MAIN_PATH)/sbt.c
+	$(CC) $(CFLAGS) $(CPPFLAGS) $^ -o $@ $(LDFLAGS) $(LDLIBS)
+
 run:
 	$(APP_PATH)
 
@@ -115,16 +133,16 @@ test: create_dirs $(BIN_DIR)/test_$(MODULE_1).out $(BIN_DIR)/test_$(MODULE_2).ou
 # $(TEST_PATH) : $(SRC_TEST)/main.c $(SRC_TEST)/$(TEST_NAME).c $(LIB_DIR)/$(MODULE_1_LIB).a $(LIB_DIR)/$(MODULE_2_LIB).a
 # 	$(CC) $(CFLAGS) $(CPPFLAGS) $(TESTFLAGS) $^ -o $@ $(LDFLAGS) $(LDLIBS)
 
-$(BIN_DIR)/test_$(MODULE_1).out: $(SRC_TEST)/test.c $(SRC_TEST)/test_$(MODULE_1).c $(LIB_DIR)/$(MODULE_1_LIB).a
+$(BIN_DIR)/test_$(MODULE_1).out: $(SRC_TEST)/test.c $(SRC_TEST)/test_$(MODULE_1).c $(LIB_DIR)/$(MODULE_1_LIB).a $(LIB_DIR)/$(MODULE_8_LIB).a
 	$(CC) $(CFLAGS) $(CPPFLAGS) $(TESTFLAGS) $^ -o $@ $(LDFLAGS) $(LDLIBS)
 
-$(BIN_DIR)/test_$(MODULE_2).out: $(SRC_TEST)/test.c $(SRC_TEST)/test_$(MODULE_2).c $(LIB_DIR)/$(MODULE_2_LIB).a
+$(BIN_DIR)/test_$(MODULE_2).out: $(SRC_TEST)/test.c $(SRC_TEST)/test_$(MODULE_2).c $(LIB_DIR)/$(MODULE_2_LIB).a $(LIB_DIR)/$(MODULE_8_LIB).a
 	$(CC) $(CFLAGS) $(CPPFLAGS) $(TESTFLAGS) $^ -o $@ $(LDFLAGS) $(LDLIBS)
 
-$(BIN_DIR)/test_$(MODULE_3).out: $(SRC_TEST)/test.c $(SRC_TEST)/test_$(MODULE_3).c $(LIB_DIR)/$(MODULE_3_LIB).a $(LIB_DIR)/$(MODULE_2_LIB).a
+$(BIN_DIR)/test_$(MODULE_3).out: $(SRC_TEST)/test.c $(SRC_TEST)/test_$(MODULE_3).c $(LIB_DIR)/$(MODULE_3_LIB).a $(LIB_DIR)/$(MODULE_2_LIB).a $(LIB_DIR)/$(MODULE_8_LIB).a
 	$(CC) $(CFLAGS) $(CPPFLAGS) $(TESTFLAGS) $^ -o $@ $(LDFLAGS) $(LDLIBS)
 
-$(BIN_DIR)/test_$(MODULE_4).out: $(SRC_TEST)/test.c $(SRC_TEST)/test_$(MODULE_4).c $(LIB_DIR)/$(MODULE_4_LIB).a $(LIB_DIR)/$(MODULE_0_LIB).a $(LIB_DIR)/$(MODULE_1_LIB).a $(LIB_DIR)/$(MODULE_2_LIB).a $(LIB_DIR)/$(MODULE_3_LIB).a $(LIB_DIR)/$(MODULE_6_LIB).a
+$(BIN_DIR)/test_$(MODULE_4).out: $(SRC_TEST)/test.c $(SRC_TEST)/test_$(MODULE_4).c $(LIB_DIR)/$(MODULE_4_LIB).a $(LIB_DIR)/$(MODULE_0_LIB).a $(LIB_DIR)/$(MODULE_1_LIB).a $(LIB_DIR)/$(MODULE_2_LIB).a $(LIB_DIR)/$(MODULE_3_LIB).a $(LIB_DIR)/$(MODULE_6_LIB).a $(LIB_DIR)/$(MODULE_8_LIB).a $(LIB_DIR)/$(MODULE_7_LIB).a
 	$(CC) $(CFLAGS) $(CPPFLAGS) $(TESTFLAGS) $^ -o $@ $(LDFLAGS) $(LDLIBS)
 
 $(BIN_DIR)/test_signals.out: $(SRC_TEST)/test.c $(SRC_TEST)/test_signals.c $(MODULES_LINK)
