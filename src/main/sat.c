@@ -64,7 +64,7 @@ sat (const char *filepath, const char *result)
       return ERROR_CODE;
     }
   int memory[MEMORY_SIZE];
-  memset (memory, 0, MEMORY_SIZE);
+  memset (memory, 0, MEMORY_SIZE * sizeof (int));
   int count_strs = 1;
   while (!feof (file))
     {
