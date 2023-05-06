@@ -2,6 +2,7 @@
 #include <sc/interface.h>
 #include <sc/keys.h>
 #include <sc/ram-operations.h>
+#include <signal.h>
 #include <stdlib.h>
 #include <string.h>
 #include <sys/stat.h>
@@ -12,6 +13,7 @@ static struct termios term_settings;
 
 int rk_readkey(enum keys* key) {
     char bf[6] = {0};
+    if (rk_mytermsave()) return EXIT_FAILURE;
     if (read(STDIN_FILENO, bf, 5) == -1) return EXIT_FAILURE;
     if (!strcmp("l", bf)) {
         *key = key_L;
@@ -51,11 +53,13 @@ int rk_keyaction(const enum keys key) {
             mkdir("data", S_IRWXU | S_IRWXG | S_IRWXO);
             return sc_memorySave(SAVE_PATH);
         case key_R:
-            break;
+            startcu = 2;
+            return EXIT_SUCCESS;
         case key_T:
-            break;
+            startcu = 1;
+            return EXIT_SUCCESS;
         case key_I:
-            break;
+            return I_restartsc();
         case key_F5:
             return I_setAccumulator();
         case key_F6:
@@ -69,7 +73,8 @@ int rk_keyaction(const enum keys key) {
         case key_LEFT:
             return I_move_address_xy(3);
         case key_ENTER:
-            return cu_read(cur_x * DEFAULT_MAX_STRS + cur_y);
+            return cu_read(cur_x * DEFAULT_MAX_STRS + cur_y) ||
+                   I_printhex(cur_x, cur_y, color_red, color_default);
         default:
             // I_printOutputField("Unknow key");
             break;

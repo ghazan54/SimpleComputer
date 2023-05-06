@@ -16,8 +16,14 @@
 #define I_POS_FLAGS_X 11
 #define I_POS_FLAGS_Y 69
 
+#define READ_WAIT (4)
+
 extern int cur_x;
 extern int cur_y;
+
+extern int lastsig;
+
+extern int startcu;
 
 int I_simplecomputer(void);
 int I_printall(void);
@@ -30,6 +36,7 @@ int I_printinstructionCounter(void);
 int I_printoperations(void);
 int I_printflags(void);
 int I_startsc(void);
+int I_scstep(int rignore);
 int I_printcustomfields(void);
 int I_printInputField(bool status, const char* format, ...);
 int I_printOutputField(const char* format, ...);
@@ -37,4 +44,12 @@ int I_move_address_xy(const int d);
 int I_executeOperation(void);
 int I_setAccumulator(void);
 int I_setInstructionCounter(void);
-long long xtoll(char* s);
+int I_ignoreimp(void);
+int I_restartsc(void);
+int xtoll(char* s);
+
+//* sighandler
+
+void I_stopsc(int sig);
+void I_sigalarm(int sig);
+void I_sigusr1(int sig);

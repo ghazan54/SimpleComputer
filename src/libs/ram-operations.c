@@ -6,12 +6,11 @@
 static int* memory = NULL;
 static int memory_flags;
 static int memory_operations_id[DEFAULT_COUNT_MEMORY_OPERATIONS] = {
-    10, 11,          // i/o
-    20, 21,          // loading/unloading
-    30, 31, 32, 33,  // arithmetic
-    40, 41, 42, 43,  // control transfer
-    51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63,
-    64, 65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 76};  // custom
+    0x10, 0x11,              // i/o
+    0x20, 0x21,              // loading/unloading
+    0x30, 0x31, 0x32, 0x33,  // arithmetic
+    0x40, 0x41, 0x42, 0x43,  // control transfer
+    0x62};                   // custom
 
 int sc_memoryInit(void) {
     memory = (int*)calloc(DEFAULT_MEMORY_INIT, sizeof(int));
@@ -21,7 +20,6 @@ int sc_memoryInit(void) {
     } else {
         return EXIT_FAILURE;
     }
-    // return memory ? EXIT_SUCCESS : EXIT_FAILURE;
 }
 
 int sc_memorySet(int address, int value) {
@@ -29,10 +27,10 @@ int sc_memorySet(int address, int value) {
         sc_regSet(err_out_of_range, 1);
         return EXIT_FAILURE;
     } else {
-        if (value > 0x3fff) {
-            sc_regSet(err_out_of_range, 1);
-            return EXIT_FAILURE;
-        }
+        // if (value > 0x3fff) {
+        //     sc_regSet(err_out_of_range, 1);
+        //     return EXIT_FAILURE;
+        // }
         memory[address] = value;
         return EXIT_SUCCESS;
     }
@@ -92,19 +90,20 @@ int cmpint_bs(const void* a, const void* b) { return (*(int*)a - *(int*)b); }
 
 int sc_commandEncode(int command, int operand, int* value) {
     if (!bsearch(&command, memory_operations_id, DEFAULT_COUNT_MEMORY_OPERATIONS, sizeof(int), cmpint_bs)) {
-        sc_regSet(err_invalid_command, 1);
-        return EXIT_FAILURE;
+        *value = 0;
+    } else {
+        *value = 0x4000;
     }
-    *value = (((*value & 0) | operand) & MASK_OPERAND_BITS) |
-             ((command << DEFAULT_BLOCK_ENCODE_BITS) & MASK_COMMAND_BITS);
+    *value |= command << DEFAULT_BLOCK_ENCODE_BITS;
+    *value |= operand;
     return EXIT_SUCCESS;
 }
 
 int sc_commandDecode(int value, int* command, int* operand) {
-    if (((value & 0x4000) >> 14) & MASK_LOW_BIT)  // 0x4000 == 0x100000000000000
-        return EXIT_FAILURE;
+    // if (((value & 0x4000) >> 14) & MASK_LOW_BIT) // 0x4000 == 0x100000000000000
+    //     return EXIT_FAILURE;
     *operand = value & MASK_OPERAND_BITS;
-    *command = (value & MASK_COMMAND_BITS) >> DEFAULT_BLOCK_ENCODE_BITS;
+    *command = (value >> DEFAULT_BLOCK_ENCODE_BITS) & MASK_OPERAND_BITS;
     return EXIT_SUCCESS;
 }
 
@@ -114,10 +113,12 @@ void sc_memoryOutput(void) {
 }
 
 void sc_memoryAddressOutput(int x, int y) {
-    if (x < 10 && y < 10) {
-        int val = memory[DEFAULT_MAX_STRS * x + y] & 0xFFFF;
-        memory[DEFAULT_MAX_STRS * x + y] < 0 ? printf("-") : printf("+");
-        printf("%04X", val);
+    if (x < 10 && y < 10 && x >= 0 && y >= 0) {
+        int val, command, operand;
+        if (sc_memoryGet(DEFAULT_MAX_STRS * x + y, &val) ||
+            sc_commandDecode(val & 0x3FFF, &command, &operand))
+            return;
+        printf("%c%02X%02X", val & 0x4000 ? '-' : '+', command, operand);
     }
 }
 

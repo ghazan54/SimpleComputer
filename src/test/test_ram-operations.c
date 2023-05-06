@@ -20,9 +20,7 @@ CTEST(ram_operations, sc_memorySet) {
     sc_memoryInit();
     int v;
 
-    ASSERT_EQUAL(EXIT_SUCCESS, sc_memorySet(0, __INT32_MAX__));
-    ASSERT_EQUAL(EXIT_SUCCESS, sc_memoryGet(0, &v));
-    ASSERT_EQUAL(__INT32_MAX__, v);
+    ASSERT_EQUAL(EXIT_FAILURE, sc_memorySet(0, __INT32_MAX__));
     // ASSERT_EQUAL(__INT32_MAX__, memory[0]);
     ASSERT_EQUAL(EXIT_SUCCESS, sc_memorySet(0, 3));
     // ASSERT_EQUAL(3, memory[0]);
@@ -156,5 +154,4 @@ CTEST(ram_operations, sc_commandDecode) {
     ASSERT_EQUAL(EXIT_SUCCESS, sc_commandDecode(0x19d9, &c, &o));
     ASSERT_EQUAL(51, c);
     ASSERT_EQUAL(89, o);
-    ASSERT_EQUAL(EXIT_FAILURE, sc_commandDecode(0x4000, &c, &o));
 }
