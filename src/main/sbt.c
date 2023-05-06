@@ -6,8 +6,6 @@
 #include <stdlib.h>
 #include <string.h>
 
-#pragma region abstract_syntax_tree
-
 typedef enum { OPERATOR, OPERAND, STATEMENT } node_type_t;
 
 typedef struct simple_basic_variables {
@@ -25,6 +23,7 @@ typedef struct simple_basic_variables {
     }
 
 int is_all_uppercase(char* str) {
+    str = *str == '-' ? str + 1 : str;
     int i = 0;
     while (str[i]) {
         if (str[i] < 'A' || str[i] > 'Z' || !isupper(str[i])) {
@@ -34,6 +33,7 @@ int is_all_uppercase(char* str) {
     }
     return 1;
 }
+
 int is_count(char* str) {
     if (str && (*str == '+' || *str == '-')) ++str;
     while (str && *str) {
@@ -48,6 +48,7 @@ void del_newline_in_str(char* s) {
 }
 
 int var_getaddress(variables* vars, char* name) {
+    // name = *name == '-' ? name + 1 : name;
     for (int i = 99; i >= 0 && vars[i].name; --i) {
         if (!strcmp(vars[i].name, name)) {
             return vars[i].address;
@@ -57,6 +58,7 @@ int var_getaddress(variables* vars, char* name) {
 }
 
 int var_getvalue(variables* vars, char* name) {
+    // name = *name == '-' ? name + 1 : name;
     for (int i = 99; i >= 0 && vars[i].name; --i) {
         if (!strcmp(vars[i].name, name)) {
             return vars[i].value;
@@ -66,6 +68,7 @@ int var_getvalue(variables* vars, char* name) {
 }
 
 int var_setvalue(variables* vars, char* name, int val) {
+    // name = *name == '-' ? name + 1 : name;
     for (int i = 99; i >= 0 && vars[i].name; --i) {
         if (!strcmp(vars[i].name, name)) {
             vars[i].value = val;
@@ -75,7 +78,7 @@ int var_setvalue(variables* vars, char* name, int val) {
     return -1;
 }
 
-int add_count_in_stack(variables* vars, int* vars_size, char* name, int value) {
+int add_count_in_memory(variables* vars, int* vars_size, char* name, int value) {
     if (var_getaddress(vars, name) == -1) {
         variables_push_back(vars, *vars_size, name, value);
         return 0;
@@ -83,48 +86,11 @@ int add_count_in_stack(variables* vars, int* vars_size, char* name, int value) {
     return -1;
 }
 
-#pragma endregion  // abstract_syntax_tree
-
-#pragma region static_stack
-
-#define STACK_SIZE 100
-
-typedef struct static_stack {
-    char* data;
-    int top;
-} static_stack;
-
 typedef struct simple_basic_string {
-    static_stack* root;
-    variables* var;
+    char* data;
     char* operation;
     int n;
 } sbstring;
-
-static_stack* create_stack() {
-    static_stack* s = (static_stack*)malloc(sizeof(*s));
-    if (s) {
-        s->top = -1;
-        s->data = (char*)calloc(STACK_SIZE, 1);
-    }
-    return s;
-}
-
-void static_stack_push(static_stack* s, char val) {
-    if (s->top >= STACK_SIZE - 1) {
-        fprintf(stderr, "sbt:\e[31m fatal error:\e[39m: Stack overflow\n");
-        exit(EXIT_FAILURE);
-    }
-    s->data[++(s->top)] = val;
-}
-
-char static_stack_pop(static_stack* s) {
-    if (s->top < 0) {
-        fprintf(stderr, "sbt:\e[31m fatal error:\e[39m: Stack underflow\n");
-        exit(EXIT_FAILURE);
-    }
-    return s->data[s->top--];
-}
 
 typedef struct dynamic_stack {
     char* data;
@@ -165,28 +131,30 @@ int precedence(char op) {
     }
 }
 
-char* to_postfix(char* expr, static_stack* s) {
+char* to_postfix(char* expr) {
     char* postfix = (char*)malloc(strlen(expr) + 1);
+    char* s = (char*)calloc(256, 1);
+    int s_len = 0;
     char* p = postfix;
     for (char* q = expr; *q; q++) {
         if (isspace(*q)) {
             continue;
-        } else if (isdigit(*q) || (*q == '-' && isdigit(*(q + 1)))) {
+        } else if (isdigit(*q) || (*q == '-' && (isdigit(*(q + 1)) || isupper(*(q + 1))))) {
             *p++ = *q;
             q++;
-            while (isdigit(*q) || *q == '.') {
+            while (isdigit(*q) || isupper(*q)) {
                 *p++ = *q;
                 q++;
             }
             *p++ = ' ';
             q--;
         } else if (is_operator(*q)) {
-            while (s->top >= 0 && is_operator(s->data[s->top]) &&
-                   precedence(s->data[s->top]) >= precedence(*q)) {
-                *p++ = static_stack_pop(s);
+            while (s_len >= 0 && is_operator(s[s_len]) && precedence(s[s_len]) >= precedence(*q)) {
+                *p++ = s[s_len - 1];
+                --s_len;
                 *p++ = ' ';
             }
-            static_stack_push(s, *q);
+            s[s_len++] = *q;
         } else {
             *p++ = *q;
             while (*(q + 1) && !isspace(*(q + 1)) && !is_operator(*(q + 1))) {
@@ -195,11 +163,13 @@ char* to_postfix(char* expr, static_stack* s) {
             *p++ = ' ';
         }
     }
-    while (s->top >= 0) {
-        *p++ = static_stack_pop(s);
+    while (s_len >= 0) {
+        *p++ = s[s_len - 1];
+        --s_len;
         *p++ = ' ';
     }
     *p = '\0';
+    free(s);
     return postfix;
 }
 
@@ -314,8 +284,6 @@ int build_stack(char* s, sbstring* str, variables* vars, int* vars_size) {
     return SUCCES_CODE;
 }
 
-#pragma endregion  // static_stack
-
 typedef struct simple_assembler_instruction {
     char instruction[8];
     int n;
@@ -323,10 +291,21 @@ typedef struct simple_assembler_instruction {
     int n_sb;
 } sbinstruction;
 
+typedef struct {
+    int n;
+    int old;
+} pair_int;
+
+static pair_int late_addresses[100];
+static int pos_late_addresses = 0;
+
 int get_sa_address(sbinstruction* si, int instructionSize, int n_sb) {
     for (int i = 0; i < instructionSize; ++i) {
         if (si[i].n_sb == n_sb) return si[i].n;
     }
+    late_addresses[pos_late_addresses].n = -1;
+    late_addresses[pos_late_addresses].old = n_sb;
+    ++pos_late_addresses;
     return -1;
 }
 
@@ -367,10 +346,10 @@ int to_sa(char* str, variables* vars, int* vars_size, int ni, sbinstruction* si,
         strcpy(si[*instructionSize].instruction, "JUMP");
         tok = strtok(NULL, " ");
         int addr = atoi(tok);
-        int sa_addr;
+        int sa_addr = -1;
         if ((!addr && *tok != '0') || (sa_addr = get_sa_address(si, *instructionSize, addr)) == -1) {
-            fprintf(stderr, "sbt:\e[31m fatal error:\e[39m: Invalid address: %s\n", tok);
-            return ERROR_CODE;
+            // fprintf(stderr, "sbt:\e[31m fatal error:\e[39m: Invalid address: %s\n", tok);
+            // return ERROR_CODE;
         }
         si[*instructionSize].n = instructionCounter++;
         si[*instructionSize].operand = sa_addr;
@@ -396,7 +375,7 @@ int to_sa(char* str, variables* vars, int* vars_size, int ni, sbinstruction* si,
         if (!strcmp(tok, ">")) {
             tok = strtok(NULL, " ");  //* get operand
             if (var_getaddress(vars, tok) == -1 && is_count(tok) && strcmp(tok, "0"))
-                add_count_in_stack(vars, vars_size, tok, atoi(tok));
+                add_count_in_memory(vars, vars_size, tok, atoi(tok));
             if (!strcmp(tok, "0")) {
                 strcpy(bf, str);
                 tok = strstr(bf, "0") + 1;
@@ -431,7 +410,7 @@ int to_sa(char* str, variables* vars, int* vars_size, int ni, sbinstruction* si,
         } else if (!strcmp(tok, "<")) {
             tok = strtok(NULL, " ");  //* get operand
             if (var_getaddress(vars, tok) == -1 && is_count(tok) && strcmp(tok, "0"))
-                add_count_in_stack(vars, vars_size, tok, atoi(tok));
+                add_count_in_memory(vars, vars_size, tok, atoi(tok));
             if (!strcmp(tok, "0")) {
                 strcpy(bf, str);
                 tok = strstr(bf, "0") + 1;
@@ -476,7 +455,7 @@ int to_sa(char* str, variables* vars, int* vars_size, int ni, sbinstruction* si,
         } else if (!strcmp(tok, "=")) {
             tok = strtok(NULL, " ");  //* get operand
             if (var_getaddress(vars, tok) == -1 && is_count(tok) && strcmp(tok, "0"))
-                add_count_in_stack(vars, vars_size, tok, atoi(tok));
+                add_count_in_memory(vars, vars_size, tok, atoi(tok));
             if (!strcmp(tok, "0")) {
                 strcpy(bf, str);
                 tok = strstr(bf, "0") + 1;
@@ -533,7 +512,7 @@ int to_sa(char* str, variables* vars, int* vars_size, int ni, sbinstruction* si,
             }
             tok = strtok(NULL, " ");
             int addr_start;
-            if (is_count(tok)) add_count_in_stack(vars, vars_size, tok, atoi(tok));
+            if (is_count(tok)) add_count_in_memory(vars, vars_size, tok, atoi(tok));
             if ((addr_start = var_getaddress(vars, tok)) == -1) {
                 fprintf(stderr, "sbt:\e[31m fatal error:\e[39m: Undeclared variable: %s\n", tok);
                 return ERROR_CODE;
@@ -612,7 +591,7 @@ int to_sa(char* str, variables* vars, int* vars_size, int ni, sbinstruction* si,
                         fprintf(stderr, "sbt:\e[31m fatal error:\e[39m: Undeclared variable: %s\n", tok);
                         return ERROR_CODE;
                     } else {
-                        if (is_count(tok)) add_count_in_stack(vars, vars_size, tok, atoi(tok));
+                        if (is_count(tok)) add_count_in_memory(vars, vars_size, tok, atoi(tok));
                         push(&stck, tok);
                     }
                 }
@@ -663,8 +642,7 @@ int sbt(const char* filepath, const char* result) {
     for (int i = 0; !feof(file); ++i) {
         char bf[BUFSIZ] = {0};
         fgets(bf, BUFSIZ, file);
-        strs[i].var = var;
-        strs[i].root = create_stack();
+        strs[i].data = NULL;
         char* tok = strtok(bf, " ");  //* get instruction number
         strs[i].n = atoi(tok);
         if (strs[i].n == 0 && (strcmp(tok, "00") || strcmp(tok, "000"))) {
@@ -673,7 +651,7 @@ int sbt(const char* filepath, const char* result) {
         }
 
         tok = strtok(NULL, "\n");  //* get full line
-        strs[i].root->data = to_postfix(tok, strs[i].root);
+        strs[i].data = to_postfix(tok);
         tok = strtok(tok, " ");  //* get instruction
         if (build_stack(tok, &strs[i], var, &var_size)) {
             fprintf(stderr, "error line: %d\nexit code: 1\n", i);
@@ -683,16 +661,31 @@ int sbt(const char* filepath, const char* result) {
 
     sbinstruction si[100];
     int instructionSize = 0;
-    for (int i = 0; strs[i].root; ++i) {
-        if (to_sa(strs[i].root->data, var, &var_size, strs[i].n, si, &instructionSize) == ERROR_CODE) {
+    for (int i = 0; strs[i].data; ++i) {
+        if (to_sa(strs[i].data, var, &var_size, strs[i].n, si, &instructionSize) == ERROR_CODE) {
             fprintf(stderr, "sbt: translate error: %d\n", i + 1);
+            exit(2);
         }
     }
 
-    typedef struct {
-        int n;
-        int old;
-    } pair_int;
+    if (pos_late_addresses) {  //? fix instructions
+        for (int i = 0; i < pos_late_addresses; ++i) {
+            if (late_addresses[i].n == -1) {
+                int a = get_sa_address(si, instructionSize, late_addresses[i].old);
+                if (a == -1) {
+                    fprintf(stderr, "sbt:\e[31m fatal error:\e[39m: Invalid address: %d\n",
+                            late_addresses[i].old);
+                    exit(2);
+                } else {
+                    for (int j = 0; j < instructionSize; ++j) {
+                        if (si[j].operand == -1) {
+                            si[j].operand = a;
+                        }
+                    }
+                }
+            }
+        }
+    }
 
     pair_int new_idxs[99 - var_size];
     for (int i = 0, j = 99, last_i = instructionSize; j > var_size; ++i, --j) {
@@ -718,13 +711,12 @@ int sbt(const char* filepath, const char* result) {
     }
     fclose(file_sa);
 
-    for (int i = 0; strs[i].root; ++i) {
-        printf("%s\n", strs[i].root->data);
+    for (int i = 0; strs[i].data; ++i) {
+        printf("%s\n", strs[i].data);
     }
 
-    for (int i = 0; strs[i].root; ++i) {
-        free(strs[i].root->data);
-        free(strs[i].root);
+    for (int i = 0; strs[i].data; ++i) {
+        free(strs[i].data);
     }
 
     return SUCCES_CODE;

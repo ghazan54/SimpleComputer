@@ -53,9 +53,9 @@ int rk_readkey(enum keys* key) {
 }
 
 int rk_keyaction(const enum keys key) {
+    char bf[32] = {0};
     switch (key) {
         case key_L:
-            char bf[32] = {0};
             I_printInputField(1, "path: ");
             scanf("%s", bf);
             I_printInputField(0, NULL);
