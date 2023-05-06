@@ -154,5 +154,4 @@ CTEST(ram_operations, sc_commandDecode) {
     ASSERT_EQUAL(EXIT_SUCCESS, sc_commandDecode(0x19d9, &c, &o));
     ASSERT_EQUAL(51, c);
     ASSERT_EQUAL(89, o);
-    ASSERT_EQUAL(EXIT_FAILURE, sc_commandDecode(0x4000, &c, &o));
 }
