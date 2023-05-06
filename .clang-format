@@ -1,4 +1,4 @@
 ---
-BasedOnStyle: Google
-IndentWidth: 4
-ColumnLimit: 110
+BasedOnStyle: GNU
+# IndentWidth: 4
+# ColumnLimit: 110
