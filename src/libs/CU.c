@@ -38,15 +38,11 @@ CU ()
     case 0x43:
       return cu_halt ();
     case 0x30:
-      return alu_add (operand);
     case 0x31:
-      return alu_sub (operand);
     case 0x32:
-      return alu_divide (operand);
     case 0x33:
-      return alu_mul (operand);
     case 0x62:
-      return alu_rcl (operand);
+      return ALU (command, operand);
     default:
       sc_regSet (err_invalid_command, 1);
       sc_regSet (err_ignoring_clock_pulses, 1);
