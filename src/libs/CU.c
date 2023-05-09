@@ -66,7 +66,7 @@ cu_read (int operand)
 {
   int c1, val;
   I_printInputField (1, " Read: ");
-  scanf ("%04X", &c1);
+  scanf ("%d", &c1);
   __fpurge (stdin);
   I_printInputField (0, NULL);
   I_printInputField (0, NULL);
@@ -82,7 +82,7 @@ int
 cu_write (int operand)
 {
   int c, ret = sc_memoryGet (operand, &c);
-  return I_printOutputField ("%c%X", c & 0x4000 ? '-' : '+', c & 0x3fff)
+  return I_printOutputField ("%c%d", c & 0x4000 ? '-' : '+', c & 0x3fff)
          || ret;
 }
 

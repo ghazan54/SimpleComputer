@@ -136,7 +136,20 @@ void
 push (stack **top, char *x)
 {
   stack *temp = (stack *)malloc (sizeof (*temp));
+  if (!temp)
+    {
+      fprintf (stderr,
+               "sbt:\e[31m fatal error:\e[39m: Failed to allocate memory\n");
+      exit (ERROR_CODE);
+    }
   temp->data = strdup (x);
+  if (!temp->data)
+    {
+      fprintf (stderr,
+               "sbt:\e[31m fatal error:\e[39m %s: Failed to allocate memory\n",
+               x);
+      exit (ERROR_CODE);
+    }
   temp->next = *top;
   *top = temp;
 }
@@ -146,8 +159,8 @@ pop (stack **top)
 {
   if (*top == NULL)
     {
-      printf ("Stack is empty.\n");
-      return NULL;
+      fprintf (stderr, "sbt:\e[31m fatal error:\e[39m: Stack is empty\n");
+      exit (ERROR_CODE);
     }
   stack *temp = *top;
   char *ret = (*top)->data;
@@ -183,6 +196,13 @@ to_postfix (char *expr)
 {
   char *postfix = (char *)malloc (strlen (expr) + 1);
   char *s = (char *)calloc (256, 1);
+  if (!s || !postfix)
+    {
+      fprintf (stderr,
+               "sbt:\e[31m fatal error:\e[39m %s: Failed to allocate memory\n",
+               s);
+      exit (ERROR_CODE);
+    }
   int s_len = 0;
   char *p = postfix;
   for (char *q = expr; *q; q++)
@@ -1003,15 +1023,15 @@ sbt (const char *filepath, const char *result)
     }
   fclose (file_sa);
 
-  for (int i = 0; strs[i].data; ++i)
-    {
-      printf ("%s\n", strs[i].data);
-    }
+  // for (int i = 0; strs[i].data; ++i) {
+  //     printf("%s\n", strs[i].data);
+  // }
 
   for (int i = 0; strs[i].data; ++i)
-    {
-      free (strs[i].data);
-    }
+    free (strs[i].data);
+
+  for (int i = 99; var[i].name; --i)
+    free (var[i].name);
 
   return SUCCES_CODE;
 }

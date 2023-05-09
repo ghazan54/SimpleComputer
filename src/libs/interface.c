@@ -493,7 +493,7 @@ I_setAccumulator ()
 {
   I_printInputField (1, "Accumulator: ");
   int c1;
-  scanf ("%04X", &c1);
+  scanf ("%d", &c1);
   __fpurge (stdin);
   I_printInputField (0, NULL);
   if (c1 < 0)
@@ -509,7 +509,8 @@ I_setInstructionCounter (void)
 {
   I_printInputField (1, " InstructionCounter: ");
   int c;
-  scanf ("%04X", &c);
+  scanf ("%d", &c);
+  I_printInputField (0, NULL);
   __fpurge (stdin);
   if (c > 0x63 || c < 0)
     {
@@ -520,7 +521,6 @@ I_setInstructionCounter (void)
     return ERROR_CODE;
   instructionCounter = (int)c;
   I_move_address_xy (5);
-  I_printInputField (0, NULL);
   return I_printinstructionCounter ();
 }
 

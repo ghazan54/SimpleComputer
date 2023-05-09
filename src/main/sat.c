@@ -68,6 +68,14 @@ sat (const char *filepath, const char *result)
   int count_strs = 1;
   while (!feof (file))
     {
+      if (count_strs - 1 > MEMORY_SIZE - 1)
+        {
+          fprintf (stderr,
+                   "sat:\e[31m fatal error:\e[39m %s: Exceeded the number of "
+                   "instructions\n",
+                   filepath);
+          exit (ERROR_CODE);
+        }
       char buf[BUFSIZ] = { 0 };
       fgets (buf, BUFSIZ, file);
       if (strlen (buf) < 1)
@@ -97,7 +105,7 @@ sat (const char *filepath, const char *result)
 
       tok = strtok (NULL, " "); //* get operand
       char *tok_tmp = *tok == '+' || *tok == '-' ? tok + 1 : tok;
-      int operand = atoi (tok_tmp);
+      int operand = command ? atoi (tok_tmp) : xtoi (tok_tmp);
       if (!operand && (strcmp (tok_tmp, "00") && strcmp (tok_tmp, "0000")))
         {
           fprintf (stderr,
