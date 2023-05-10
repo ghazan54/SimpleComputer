@@ -1,0 +1,22 @@
+name: CI
+
+on:
+  push:
+    branches: [ master ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v2
+
+    - name: Build and test
+      run: |
+        make
+        make test
+
+    - name: Check formatting
+      run: |
+        find . -type f -name "*.[ch]" ! -name '*ctest.h' | xargs clang-format -i --style=GNU
+        git diff --exit-code
