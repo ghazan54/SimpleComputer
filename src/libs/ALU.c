@@ -37,15 +37,20 @@ alu_add (int operand)
   int val;
   if (sc_memoryGet (operand, &val))
     return ERROR_CODE;
-  // val = val & 0x4000 ? -val : val;
+  val = val & 0x4000 ? -(val & 0x3fff) : val & 0x3fff;
   bool sign = accumulator & 0x4000 ? true : false;
   accumulator &= 0x3fff;
   accumulator = sign ? -accumulator : accumulator;
-  long long tmp = (long long)accumulator + ((long long)val & 0x3fff);
+  long long tmp = (long long)accumulator + (long long)val;
   if (tmp > 0x3fff || tmp < -0x3fff)
-    accumulator = 0;
+    {
+      accumulator = 0;
+      sc_regSet (err_overflow, 1);
+    }
   else
-    accumulator += val & 0x3fff;
+    {
+      accumulator = (int)tmp;
+    }
 
   if (accumulator < 0)
     {
@@ -66,15 +71,20 @@ alu_sub (int operand)
   int val;
   if (sc_memoryGet (operand, &val))
     return ERROR_CODE;
-  // val = val & 0x4000 ? -val : val;
+  val = val & 0x4000 ? -(val & 0x3fff) : val & 0x3fff;
   bool sign = accumulator & 0x4000 ? true : false;
   accumulator &= 0x3fff;
   accumulator = sign ? -accumulator : accumulator;
-  long long tmp = (long long)accumulator - ((long long)val & 0x3fff);
+  long long tmp = (long long)accumulator - (long long)val;
   if (tmp > 0x3fff || tmp < -0x3fff)
-    accumulator = 0;
+    {
+      accumulator = 0;
+      sc_regSet (err_overflow, 1);
+    }
   else
-    accumulator -= val & 0x3fff;
+    {
+      accumulator = (int)tmp;
+    }
 
   if (accumulator < 0)
     {
@@ -95,17 +105,17 @@ alu_divide (int operand)
   int val;
   if (sc_memoryGet (operand, &val))
     return ERROR_CODE;
-  // val = val & 0x4000 ? -val : val;
-  if (!(val & 0x3fff))
+  val = val & 0x4000 ? -(val & 0x3fff) : val & 0x3fff;
+  bool sign = accumulator & 0x4000 ? true : false;
+  accumulator &= 0x3fff;
+  accumulator = sign ? -accumulator : accumulator;
+  if (!val)
     {
       sc_regSet (err_division_by_zero, 1);
       return ERROR_CODE;
     }
-  bool sign = accumulator & 0x4000 ? true : false;
-  accumulator &= 0x3fff;
-  accumulator = sign ? -accumulator : accumulator;
 
-  accumulator /= val & 0x3fff;
+  accumulator /= val;
 
   if (accumulator < 0)
     {
@@ -126,15 +136,20 @@ alu_mul (int operand)
   int val;
   if (sc_memoryGet (operand, &val))
     return ERROR_CODE;
-  // val = val & 0x4000 ? -val : val;
+  val = val & 0x4000 ? -(val & 0x3fff) : val & 0x3fff;
   bool sign = accumulator & 0x4000 ? true : false;
   accumulator &= 0x3fff;
   accumulator = sign ? -accumulator : accumulator;
-  long long tmp = (long long)accumulator * ((long long)val & 0x3fff);
+  long long tmp = (long long)accumulator * (long long)val;
   if (tmp > 0x3fff || tmp < -0x3fff)
-    accumulator = 0;
+    {
+      accumulator = 0;
+      sc_regSet (err_overflow, 1);
+    }
   else
-    accumulator *= val & 0x3fff;
+    {
+      accumulator *= val;
+    }
 
   if (accumulator < 0)
     {
@@ -155,10 +170,11 @@ alu_rcl (int operand)
   int val;
   if (sc_memoryGet (operand, &val))
     return ERROR_CODE;
+  bool sign = val & 0x4000;
   int msb = (val >> 13) & 1;
   val <<= 1;
   val |= msb;
   val &= 0x3fff;
-  accumulator = val;
+  accumulator = sign ? val | 0x4000 : val;
   return I_printaccumulator ();
 }
