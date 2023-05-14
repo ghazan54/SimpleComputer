@@ -224,6 +224,28 @@ to_postfix (char *expr)
           *p++ = ' ';
           q--;
         }
+      else if (*q == '(')
+        {
+          s[s_len++] = *q;
+        }
+      else if (*q == ')')
+        {
+          while (s_len > 0 && s[s_len - 1] != '(')
+            {
+              *p++ = s[--s_len];
+              *p++ = ' ';
+            }
+          if (s_len > 0)
+            {
+              s_len--;
+            }
+          else
+            {
+              fprintf (stderr,
+                       "sbt:\e[31m error:\e[39m Mismatched parentheses\n");
+              exit (ERROR_CODE);
+            }
+        }
       else if (is_operator (*q))
         {
           while (s_len >= 0 && is_operator (s[s_len])
@@ -238,15 +260,21 @@ to_postfix (char *expr)
       else
         {
           *p++ = *q;
-          while (*(q + 1) && !isspace (*(q + 1)) && !is_operator (*(q + 1)))
+          while (*(q + 1) && !isspace (*(q + 1)) && !is_operator (*(q + 1))
+                 && *(q + 1) != '(' && *(q + 1) != ')')
             {
               *p++ = *++q;
             }
           *p++ = ' ';
         }
     }
-  while (s_len >= 0)
+  while (s_len > 0)
     {
+      if (s[s_len - 1] == '(')
+        {
+          fprintf (stderr, "sbt:\e[31m error:\e[39m Mismatched parentheses\n");
+          exit (ERROR_CODE);
+        }
       *p++ = s[s_len - 1];
       --s_len;
       *p++ = ' ';
@@ -414,7 +442,8 @@ build_stack (char *s, sbstring *str, variables *vars, int *vars_size)
                   else if (!strcmp (tok, "*") || !strcmp (tok, "/"))
                     {
                     }
-                  else if (is_all_uppercase (tok) || is_count (tok))
+                  else if (is_all_uppercase (tok) || is_count (tok)
+                           || !strcmp (tok, "(") || !strcmp (tok, ")"))
                     {
                     }
                   else
@@ -1071,9 +1100,10 @@ sbt (const char *filepath, const char *result)
     }
   fclose (file_sa);
 
-  // for (int i = 0; strs[i].data; ++i) {
-  //     printf("%s\n", strs[i].data);
-  // }
+  for (int i = 0; strs[i].data; ++i)
+    {
+      printf ("%s\n", strs[i].data);
+    }
 
   for (int i = 0; strs[i].data; ++i)
     free (strs[i].data);
