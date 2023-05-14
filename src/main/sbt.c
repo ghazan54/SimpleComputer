@@ -774,35 +774,34 @@ to_sa (char *str, variables *vars, int *vars_size, int ni, sbinstruction *si,
           bool load = false;
           while ((tok = strtok (NULL, " ")))
             {
-              if (!load
-                  && (!strcmp (tok, "+") || !strcmp (tok, "-")
-                      || !strcmp (tok, "*") || !strcmp (tok, "/")))
-                { //? load in accumulator
-                  load = true;
-                  char *b = pop (&stck);
+              load = true;
+              if (!strcmp (tok, "+"))
+                {
                   char *a = pop (&stck);
-                  addr_start = var_getaddress (vars, a);
+                  char *b = pop (&stck);
+                  addr_start = var_getaddress (vars, b);
+
                   strcpy (si[*instructionSize].instruction, "LOAD");
                   si[*instructionSize].n = instructionCounter++;
                   si[*instructionSize].operand = addr_start;
                   si[*instructionSize].n_sb = ni;
                   *instructionSize += 1;
-                  push (&stck, a);
-                  push (&stck, b);
-                  free (a);
-                  free (b);
-                }
-              if (!strcmp (tok, "+"))
-                {
-                  char *a = pop (&stck);
-                  char *b = pop (&stck);
+
                   addr_start = var_getaddress (vars, a);
+
                   strcpy (si[*instructionSize].instruction, "ADD");
                   si[*instructionSize].n = instructionCounter++;
                   si[*instructionSize].operand = addr_start;
                   si[*instructionSize].n_sb = ni;
                   *instructionSize += 1;
                   push (&stck, name);
+
+                  strcpy (si[*instructionSize].instruction, "STORE");
+                  si[*instructionSize].n = instructionCounter++;
+                  si[*instructionSize].operand = addr;
+                  si[*instructionSize].n_sb = ni;
+                  *instructionSize += 1;
+
                   free (a);
                   free (b);
                 }
@@ -810,13 +809,29 @@ to_sa (char *str, variables *vars, int *vars_size, int ni, sbinstruction *si,
                 {
                   char *a = pop (&stck);
                   char *b = pop (&stck);
+                  addr_start = var_getaddress (vars, b);
+
+                  strcpy (si[*instructionSize].instruction, "LOAD");
+                  si[*instructionSize].n = instructionCounter++;
+                  si[*instructionSize].operand = addr_start;
+                  si[*instructionSize].n_sb = ni;
+                  *instructionSize += 1;
+
                   addr_start = var_getaddress (vars, a);
+
                   strcpy (si[*instructionSize].instruction, "SUB");
                   si[*instructionSize].n = instructionCounter++;
                   si[*instructionSize].operand = addr_start;
                   si[*instructionSize].n_sb = ni;
                   *instructionSize += 1;
                   push (&stck, name);
+
+                  strcpy (si[*instructionSize].instruction, "STORE");
+                  si[*instructionSize].n = instructionCounter++;
+                  si[*instructionSize].operand = addr;
+                  si[*instructionSize].n_sb = ni;
+                  *instructionSize += 1;
+
                   free (a);
                   free (b);
                 }
@@ -824,13 +839,29 @@ to_sa (char *str, variables *vars, int *vars_size, int ni, sbinstruction *si,
                 {
                   char *a = pop (&stck);
                   char *b = pop (&stck);
+                  addr_start = var_getaddress (vars, b);
+
+                  strcpy (si[*instructionSize].instruction, "LOAD");
+                  si[*instructionSize].n = instructionCounter++;
+                  si[*instructionSize].operand = addr_start;
+                  si[*instructionSize].n_sb = ni;
+                  *instructionSize += 1;
+
                   addr_start = var_getaddress (vars, a);
+
                   strcpy (si[*instructionSize].instruction, "MUL");
                   si[*instructionSize].n = instructionCounter++;
                   si[*instructionSize].operand = addr_start;
                   si[*instructionSize].n_sb = ni;
                   *instructionSize += 1;
                   push (&stck, name);
+
+                  strcpy (si[*instructionSize].instruction, "STORE");
+                  si[*instructionSize].n = instructionCounter++;
+                  si[*instructionSize].operand = addr;
+                  si[*instructionSize].n_sb = ni;
+                  *instructionSize += 1;
+
                   free (a);
                   free (b);
                 }
@@ -838,13 +869,29 @@ to_sa (char *str, variables *vars, int *vars_size, int ni, sbinstruction *si,
                 {
                   char *a = pop (&stck);
                   char *b = pop (&stck);
+                  addr_start = var_getaddress (vars, b);
+
+                  strcpy (si[*instructionSize].instruction, "LOAD");
+                  si[*instructionSize].n = instructionCounter++;
+                  si[*instructionSize].operand = addr_start;
+                  si[*instructionSize].n_sb = ni;
+                  *instructionSize += 1;
+
                   addr_start = var_getaddress (vars, a);
+
                   strcpy (si[*instructionSize].instruction, "DIVIDE");
                   si[*instructionSize].n = instructionCounter++;
                   si[*instructionSize].operand = addr_start;
                   si[*instructionSize].n_sb = ni;
                   *instructionSize += 1;
                   push (&stck, name);
+
+                  strcpy (si[*instructionSize].instruction, "STORE");
+                  si[*instructionSize].n = instructionCounter++;
+                  si[*instructionSize].operand = addr;
+                  si[*instructionSize].n_sb = ni;
+                  *instructionSize += 1;
+
                   free (a);
                   free (b);
                 }
@@ -875,12 +922,13 @@ to_sa (char *str, variables *vars, int *vars_size, int ni, sbinstruction *si,
               si[*instructionSize].n_sb = ni;
               *instructionSize += 1;
               load = true;
+
+              strcpy (si[*instructionSize].instruction, "STORE");
+              si[*instructionSize].n = instructionCounter++;
+              si[*instructionSize].operand = addr;
+              si[*instructionSize].n_sb = ni;
+              *instructionSize += 1;
             }
-          strcpy (si[*instructionSize].instruction, "STORE");
-          si[*instructionSize].n = instructionCounter++;
-          si[*instructionSize].operand = addr;
-          si[*instructionSize].n_sb = ni;
-          *instructionSize += 1;
         }
     }
   else if (!strcmp (tok, "END"))
